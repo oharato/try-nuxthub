@@ -48,42 +48,11 @@ const r2Bucket = new cloudflare.R2Bucket('blob', {
   location: 'APAC' // optional: ENAM, WNAM, APAC, EEUR, WEUR
 }, { provider })
 
-// 4. Cloudflare Pages Project with NuxtHub bindings
+// 4. Cloudflare Pages Project
 const pagesProject = new cloudflare.PagesProject('pages', {
   accountId: accountId,
   name: prefix,
-  productionBranch: 'main',
-  deploymentConfigs: {
-    production: {
-      compatibilityDate: '2025-03-01',
-      compatibilityFlags: ['nodejs_compat'],
-      d1Databases: {
-        DB: database.id
-      },
-      kvNamespaces: {
-        KV: kvNamespace.id
-      },
-      r2Buckets: {
-        BLOB: r2Bucket.name
-      },
-      environmentVariables: {
-        NODE_ENV: 'production'
-      }
-    },
-    preview: {
-      compatibilityDate: '2025-03-01',
-      compatibilityFlags: ['nodejs_compat'],
-      d1Databases: {
-        DB: database.id
-      },
-      kvNamespaces: {
-        KV: kvNamespace.id
-      },
-      r2Buckets: {
-        BLOB: r2Bucket.name
-      }
-    }
-  }
+  productionBranch: 'main'
 }, { provider })
 
 // Export provisioned resource IDs & URLs

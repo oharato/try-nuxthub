@@ -7,12 +7,12 @@
     "destroy": "node --env-file=.env --eval \"require('child_process').spawnSync('pulumi', ['destroy'], { stdio: 'inherit' })\""
   },
   "dependencies": {
-    "@pulumi/cloudflare": "^6.19.0",
+    "@pulumi/cloudflare": "^5.49.1",
     "@pulumi/pulumi": "^3.257.0"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
-    "typescript": "^7.0.2"
+    "@types/node": "^22.13.0",
+    "typescript": "^5.8.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
