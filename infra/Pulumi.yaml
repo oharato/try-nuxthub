@@ -1,0 +1,3 @@
+name: nuxthub-cloudflare-infra
+runtime: nodejs
+description: Cloudflare Infrastructure for NuxtHub using Pulumi TypeScript

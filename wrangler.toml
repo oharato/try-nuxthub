@@ -1,0 +1,23 @@
+name = "try-nuxthub"
+compatibility_date = "2025-03-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+# 1. D1 Database (SQLite)
+# Pulumi で作成した database_id を設定
+[[d1_databases]]
+binding = "DB"
+database_name = "nuxthub-cloudflare-infra-prod-d1"
+database_id = "f8bbb8e3-80b4-4286-ab7e-6c8022eb22b7"
+
+# 2. KV Namespace (Key-Value)
+# Pulumi で作成した kv_id を設定
+[[kv_namespaces]]
+binding = "KV"
+id = "eb1d40410cbb4e73ae23c50b459fa2ee"
+
+# 3. R2 Bucket (Blob Storage)
+# Pulumi で作成した bucket_name を設定
+[[r2_buckets]]
+binding = "BLOB"
+bucket_name = "nuxthub-cloudflare-infra-prod-blob"

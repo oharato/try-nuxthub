@@ -1,0 +1,125 @@
+# 🚀 try-nuxthub: Rails-like DX on TypeScript & Cloudflare Workers
+
+> **TypeScript と Cloudflare Workers で Ruby on Rails のような「設定不要・オールインワン（Batteries-Included）」な開発体験を実現するプロジェクト**
+
+NuxtHub を使うことで、Cloudflare Workers のエッジインフラ（D1, KV, R2）を複雑な設定なしに Nuxt アプリケーションから直接操作できます。また、本番インフラの定義・管理には **Pulumi (TypeScript)** を採用しています。
+
+---
+
+## 🎯 Rails との対応表
+
+| 機能 / レイヤー | Ruby on Rails | NuxtHub + Cloudflare |
+| :--- | :--- | :--- |
+| **データベース (ORM)** | ActiveRecord + PostgreSQL/MySQL | **Cloudflare D1 (SQLite) + Drizzle ORM** |
+| **マイグレーション** | `db/migrate` / `rails db:migrate` | `server/database/migrations` / `pnpm db:migrations` |
+| **ファイル保存** | ActiveStorage (S3 / Local) | **Cloudflare R2** (`hubBlob()`) |
+| **KVS / キャッシュ** | `Rails.cache` / Redis | **Cloudflare KV** (`hubKV()`) / `defineCachedEventHandler` |
+| **管理GUI** | Rails Admin / Adminer | **Nuxt DevTools (Hub タブ)** / **NuxtHub Admin** |
+| **インフラ管理 (IaC)** | Terraform / Ansible / CDK | **Pulumi (TypeScript)** (`infra/`) |
+
+---
+
+## 📂 プロジェクト構成
+
+```text
+├── app/
+│   ├── app.vue                 # ルートコンポーネント
+│   └── pages/
+│       └── index.vue           # 全機能（DB/KV/Blob/Cache）を試せるダッシュボード
+├── server/
+│   ├── api/
+│   │   ├── todos/              # D1 データベース操作 (CRUD)
+│   │   ├── kv/                 # KV 操作 (Get, Set, Delete)
+│   │   ├── blob/               # R2 ファイル操作 (Upload, Serve, Delete)
+│   │   └── cached-time.ts      # エッジキャッシュ体験
+│   ├── database/
+│   │   ├── schema.ts           # Drizzle ORM スキーマ定義
+│   │   └── migrations/         # D1 用 マイグレーション SQL
+│   └── utils/
+│       └── drizzle.ts          # 型安全な useDrizzle() ヘルパー
+├── infra/                      # Pulumi による Cloudflare インフラ定義 (IaC)
+│   ├── .env.example            # 認証情報テンプレート
+│   ├── Pulumi.yaml
+│   ├── package.json
+│   └── index.ts
+├── wrangler.toml               # Cloudflare Pages / Workers バインディング設定
+├── nuxt.config.ts              # Nuxt & NuxtHub 設定
+├── README.md                   # 本ドキュメント
+└── TUTORIAL.md                 # 詳しいチュートリアル・ハンズオンガイド
+```
+
+---
+
+## ⚡ クイックスタート
+
+### 1. 依存パッケージのインストール
+```bash
+pnpm install
+```
+
+### 2. 開発サーバーの起動
+```bash
+pnpm dev
+```
+- **ローカルからアクセス**: [http://localhost:3000](http://localhost:3000)
+- **同一LAN内からアクセス**: [http://nuc7.local:3000](http://nuc7.local:3000)
+
+D1、KV、R2、Cache の全機能をテストできるダッシュボードが表示されます。
+
+### 3. Nuxt DevTools（NuxtHub GUI）の利用
+ブラウザでアプリを開いた状態で、画面下部の **Nuxt ロゴ** をクリックするか `Shift + Alt + D` を押すと、**Nuxt DevTools** が開きます。
+DevTools 内の **「Hub」** タブから、ローカルの D1 データベース、KV、Blob を直接ブラウザから閲覧・クエリ実行・編集できます。
+
+---
+
+## 🚀 デプロイとインフラ構築の流れ
+
+### ① Pulumi による Cloudflare インフラ作成 (IaC)
+```bash
+# 1. 認証情報の設定 (.env)
+cp infra/.env.example infra/.env
+# infra/.env に CLOUDFLARE_ACCOUNT_ID と CLOUDFLARE_API_TOKEN を記入
+# (※ API Token には D1 / KV / R2 / Pages の Edit 権限が必要です)
+
+# 2. インフラのデプロイ
+pnpm infra:preview   # 変更内容の事前確認
+pnpm infra:apply     # インフラの作成・適用
+```
+
+### ② 本番 D1 データベースへのマイグレーション適用
+初回デプロイ時（またはスキーマ変更時）に、本番 D1 にテーブルを作成します：
+
+```bash
+pnpm db:migrate:prod
+```
+
+### ③ バインディング設定 & デプロイ
+Pulumi 実行結果で出力された ID を `wrangler.toml` に設定し、デプロイコマンドを実行します。
+
+```bash
+pnpm deploy:cf
+```
+
+---
+
+## 🛠️ コマンド一覧
+
+| コマンド | 説明 |
+| :--- | :--- |
+| `pnpm dev` | ローカル開発サーバー起動（D1/KV/R2をエミュレート、LAN公開対応） |
+| `pnpm dev --remote` | 本番 / プレビュー環境の Cloudflare リソースに直接接続して開発 |
+| `pnpm infra:preview` | Pulumi による Cloudflare インフラ変更の事前確認 |
+| `pnpm infra:apply` | Pulumi による Cloudflare インフラの作成・更新 |
+| `pnpm db:migrate:prod` | 本番 Cloudflare D1 データベースにマイグレーションを適用 |
+| `pnpm db:migrations` | マイグレーションの適用状態を確認 |
+| `pnpm db:create` | 新規マイグレーション SQL ファイルの作成 |
+| `pnpm build` | 本番用ビルド |
+| `pnpm preview` | 本番ビルドのローカルプレビュー |
+| `pnpm deploy:cf` | ビルド後に Cloudflare Pages へ直接デプロイ |
+| `pnpm deploy` | NuxtHub Platform（マネージド）へのデプロイ |
+
+---
+
+## 📖 詳しいチュートリアル
+
+ステップごとのコードの書き方、マイグレーション管理、Pulumi の詳しい設定方法については [TUTORIAL.md](./TUTORIAL.md) をご覧ください。

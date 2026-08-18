@@ -1,0 +1,7 @@
+-- Migration: 0000_create_todos_table.sql
+CREATE TABLE IF NOT EXISTS `todos` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`title` text NOT NULL,
+	`completed` integer DEFAULT 0 NOT NULL,
+	`created_at` integer NOT NULL
+);

@@ -1,0 +1,22 @@
+{
+  "name": "nuxthub-cloudflare-infra",
+  "main": "index.ts",
+  "scripts": {
+    "preview": "node --env-file=.env --eval \"require('child_process').spawnSync('pulumi', ['preview'], { stdio: 'inherit' })\"",
+    "apply": "node --env-file=.env --eval \"require('child_process').spawnSync('pulumi', ['up'], { stdio: 'inherit' })\"",
+    "destroy": "node --env-file=.env --eval \"require('child_process').spawnSync('pulumi', ['destroy'], { stdio: 'inherit' })\""
+  },
+  "dependencies": {
+    "@pulumi/cloudflare": "^6.19.0",
+    "@pulumi/pulumi": "^3.257.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "protobufjs"
+    ]
+  }
+}
