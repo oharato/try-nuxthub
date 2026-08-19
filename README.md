@@ -162,3 +162,4 @@ pnpm deploy:cf
 
 - 📘 **[チュートリアル & 開発ガイド (docs/TUTORIAL.md)](./docs/TUTORIAL.md)**: ステップごとのコードの書き方、マイグレーション管理、Pulumi の詳しい設定方法
 - 🔐 **[暗号化 Cookie 認証ガイド (docs/AUTH.md)](./docs/AUTH.md)**: エッジ環境におけるセッション設計、Redis / JWT との比較、セキュリティ仕様
+- ⚡ **[CI/CD & デプロイ高速化ガイド (docs/ci-optimization.md)](./docs/ci-optimization.md)**: GitHub Actions、Vitest、Nuxt ビルド、Cloudflare Pages デプロイの高速化手法とベンチマーク結果
