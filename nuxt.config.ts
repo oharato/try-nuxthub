@@ -12,6 +12,13 @@ export default defineNuxtConfig({
     port: 3000,
   },
 
+  // Vite configuration for LAN hosts
+  vite: {
+    server: {
+      allowedHosts: true,
+    },
+  },
+
   // Env variables - https://nuxt.com/docs/getting-started/configuration#environment-variables-and-private-tokens
   runtimeConfig: {
     public: {

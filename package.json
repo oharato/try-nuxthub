@@ -17,7 +17,9 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt --write .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
@@ -28,10 +30,13 @@
     "unstorage": "^1.17.5"
   },
   "devDependencies": {
+    "@nuxt/test-utils": "^4.1.0",
+    "happy-dom": "^20.11.2",
     "nuxthub": "^0.9.4",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.2.4",
     "wrangler": "^4.124.0"
   },

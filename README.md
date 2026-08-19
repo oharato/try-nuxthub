@@ -122,6 +122,8 @@ pnpm deploy:cf
 | `pnpm lint:fix`        | Oxlint による自動修正                                           |
 | `pnpm format`          | Oxfmt によるコードフォーマット                                  |
 | `pnpm typecheck`       | Nuxt / TypeScript による型チェック                              |
+| `pnpm test`            | Vitest によるテスト実行 (ユニット & 統合テスト)                 |
+| `pnpm test:watch`      | Vitest によるテスト監視モード                                   |
 | `pnpm infra:preview`   | Pulumi による Cloudflare インフラ変更の事前確認                 |
 | `pnpm infra:apply`     | Pulumi による Cloudflare インフラの作成・更新                   |
 | `pnpm db:migrate:prod` | 本番 Cloudflare D1 データベースにマイグレーションを適用         |
