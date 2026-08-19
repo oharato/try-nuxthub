@@ -18,7 +18,67 @@ interface BlobItem {
   uploadedAt: string;
 }
 
-const activeTab = ref<"db" | "kv" | "blob" | "cache">("db");
+const activeTab = ref<"db" | "kv" | "blob" | "cache" | "auth">("db");
+
+// --- Auth (Encrypted Cookie) State & Actions ---
+const { loggedIn, user, clear, fetch: fetchSession } = useUserSession();
+const currentUser = computed(() => user.value as Record<string, any> | null);
+const loginEmail = ref("admin@example.com");
+const loginPassword = ref("password");
+const loginName = ref("管理者 太郎");
+const isAuthLoading = ref(false);
+const authError = ref("");
+const protectedData = ref<{ secretMessage: string; user: any; verifiedAt: string } | null>(null);
+const isProtectedLoading = ref(false);
+
+async function handleLogin() {
+  isAuthLoading.value = true;
+  authError.value = "";
+  try {
+    await $fetch("/api/auth/login", {
+      method: "POST",
+      body: {
+        email: loginEmail.value,
+        password: loginPassword.value,
+        name: loginName.value,
+      },
+    });
+    await fetchSession();
+  } catch (e: any) {
+    authError.value = e?.data?.statusMessage || e?.message || "ログインに失敗しました";
+  } finally {
+    isAuthLoading.value = false;
+  }
+}
+
+async function handleLogout() {
+  isAuthLoading.value = true;
+  try {
+    await $fetch("/api/auth/logout", { method: "POST" });
+    await clear();
+    protectedData.value = null;
+  } catch (e) {
+    alert("ログアウトに失敗しました");
+  } finally {
+    isAuthLoading.value = false;
+  }
+}
+
+async function fetchProtectedData() {
+  isProtectedLoading.value = true;
+  try {
+    const res = await $fetch<{
+      secretMessage: string;
+      user: any;
+      verifiedAt: string;
+    }>("/api/auth/protected");
+    protectedData.value = res;
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || "保護されたデータの取得に失敗しました");
+  } finally {
+    isProtectedLoading.value = false;
+  }
+}
 
 // --- Database (Todos) State & Actions ---
 const todos = ref<Todo[]>([]);
@@ -106,7 +166,7 @@ async function setKV() {
 
     // Optimistic UI: 即座にローカル一覧を更新（Cloudflare KV の list伝播遅延対策）
     const existingIndex = kvList.value.findIndex((item) => item.key === key);
-    if (existingIndex >= 0) {
+    if (existingIndex >= 0 && kvList.value[existingIndex]) {
       kvList.value[existingIndex].value = parsedValue;
     } else {
       kvList.value.unshift({ key, value: parsedValue });
@@ -251,6 +311,9 @@ onMounted(() => {
       </button>
       <button :class="['tab-btn', { active: activeTab === 'cache' }]" @click="activeTab = 'cache'">
         ⚡ Cache (Edge Handler)
+      </button>
+      <button :class="['tab-btn', { active: activeTab === 'auth' }]" @click="activeTab = 'auth'">
+        🔐 Auth (暗号化 Cookie)
       </button>
     </nav>
 
@@ -443,6 +506,87 @@ onMounted(() => {
           <code
             >// server/api/cached-time.ts<br />export default defineCachedEventHandler(handler, {
             maxAge: 10 })</code
+          >
+        </div>
+      </section>
+
+      <!-- 5. Auth (Encrypted Cookie) -->
+      <section v-if="activeTab === 'auth'" class="section">
+        <div class="section-header">
+          <h2>Sealed / Encrypted Cookie Authentication</h2>
+          <p>
+            サーバーレス・エッジ環境のベストプラクティス。DBアクセス 0 回・0ms でセッション判定。
+            Cookie の中身は AES 暗号化されているため、ブラウザからの閲覧・改ざんが一切不可能です。
+          </p>
+        </div>
+
+        <div v-if="loggedIn && currentUser" class="auth-logged-in">
+          <div class="user-card">
+            <div class="user-avatar">👤</div>
+            <div class="user-details">
+              <h3>
+                {{ currentUser.name }} <span class="role-badge">{{ currentUser.role }}</span>
+              </h3>
+              <p class="user-email">✉️ {{ currentUser.email }}</p>
+              <p class="login-time">
+                ログイン日時: {{ new Date(currentUser.loggedInAt).toLocaleString() }}
+              </p>
+            </div>
+            <button @click="handleLogout" class="btn-delete" :disabled="isAuthLoading">
+              {{ isAuthLoading ? "処理中..." : "ログアウト" }}
+            </button>
+          </div>
+
+          <div class="protected-area">
+            <h4>🛡️ 保護された API エンドポイント（/api/auth/protected）の検証</h4>
+            <button @click="fetchProtectedData" class="btn-primary" :disabled="isProtectedLoading">
+              {{ isProtectedLoading ? "通信中..." : "保護データを取得" }}
+            </button>
+
+            <div v-if="protectedData" class="protected-result">
+              <p class="success-msg">{{ protectedData.secretMessage }}</p>
+              <span class="timestamp"
+                >検証日時: {{ new Date(protectedData.verifiedAt).toLocaleTimeString() }}</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="auth-login-form">
+          <form @submit.prevent="handleLogin" class="input-form-grid">
+            <input
+              v-model="loginName"
+              type="text"
+              placeholder="表示名 (例: 管理者 太郎)"
+              class="text-input"
+              required
+            />
+            <input
+              v-model="loginEmail"
+              type="email"
+              placeholder="メールアドレス (例: admin@example.com)"
+              class="text-input"
+              required
+            />
+            <input
+              v-model="loginPassword"
+              type="password"
+              placeholder="パスワード (デモ用: password)"
+              class="text-input"
+              required
+            />
+            <button type="submit" class="btn-primary" :disabled="isAuthLoading">
+              {{ isAuthLoading ? "ログイン中..." : "🔐 ログイン (暗号化 Cookie を発行)" }}
+            </button>
+          </form>
+          <p v-if="authError" class="auth-error-msg">{{ authError }}</p>
+        </div>
+
+        <div class="code-preview">
+          <code
+            >// server/api/auth/login.post.ts<br />await setUserSession(event, { user: { id, email,
+            role } })<br /><br />// server/api/auth/protected.get.ts<br />const session = await
+            getUserSession(event) // エッジで 0ms 復号</code
           >
         </div>
       </section>
@@ -864,6 +1008,84 @@ h1 {
   color: #64748b;
   margin: 0;
   line-height: 1.5;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.user-avatar {
+  font-size: 2.5rem;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-details h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+}
+
+.role-badge {
+  font-size: 0.75rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-left: 6px;
+}
+
+.user-email {
+  margin: 0 0 4px 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.login-time {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.protected-area {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.protected-area h4 {
+  margin: 0 0 12px 0;
+  color: #166534;
+}
+
+.protected-result {
+  margin-top: 12px;
+  padding: 12px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #86efac;
+}
+
+.success-msg {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.auth-error-msg {
+  margin-top: 8px;
+  color: #ef4444;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 640px) {

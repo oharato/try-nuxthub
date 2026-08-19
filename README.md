@@ -8,16 +8,18 @@ NuxtHub を使うことで、Cloudflare Workers のエッジインフラ（D1, K
 
 ## 🎯 Rails との対応表
 
-| 機能 / レイヤー        | Ruby on Rails                     | Nuxt 4 + NuxtHub v0.10 + Cloudflare                       |
-| :--------------------- | :-------------------------------- | :-------------------------------------------------------- |
-| **フレームワーク**     | Rails 8                           | **Nuxt 4**                                                |
-| **データベース (ORM)** | ActiveRecord + PostgreSQL/MySQL   | **Cloudflare D1 (SQLite) + Drizzle ORM** (`hub:db`)       |
-| **マイグレーション**   | `db/migrate` / `rails db:migrate` | `server/database/migrations` / `pnpm db:migrations`       |
-| **ファイル保存**       | ActiveStorage (S3 / Local)        | **Cloudflare R2** (`hub:blob`)                            |
-| **KVS / キャッシュ**   | `Rails.cache` / Redis             | **Cloudflare KV** (`hub:kv`) / `defineCachedEventHandler` |
-| **Linter / Formatter** | RuboCop                           | **Oxlint / Oxfmt** (Rust製 超高速ツール)                  |
-| **管理GUI**            | Rails Admin / Adminer             | **Nuxt DevTools (Hub タブ)** / **NuxtHub Admin**          |
-| **インフラ管理 (IaC)** | Terraform / Ansible / CDK         | **Pulumi (TypeScript)** (`infra/`)                        |
+| 機能 / レイヤー          | Ruby on Rails                     | Nuxt 4 + NuxtHub v0.10 + Cloudflare                       |
+| :----------------------- | :-------------------------------- | :-------------------------------------------------------- |
+| **フレームワーク**       | Rails 8                           | **Nuxt 4**                                                |
+| **データベース (ORM)**   | ActiveRecord + PostgreSQL/MySQL   | **Cloudflare D1 (SQLite) + Drizzle ORM** (`hub:db`)       |
+| **認証 (Session)**       | Devise / Session Cookie           | **暗号化 Cookie (Sealed Session)** (`nuxt-auth-utils`)    |
+| **マイグレーション**     | `db/migrate` / `rails db:migrate` | `server/db/migrations` / `pnpm db:generate`               |
+| **ファイル保存**         | ActiveStorage (S3 / Local)        | **Cloudflare R2** (`hub:blob`)                            |
+| **KVS / キャッシュ**     | `Rails.cache` / Redis             | **Cloudflare KV** (`hub:kv`) / `defineCachedEventHandler` |
+| **Linter / Formatter**   | RuboCop                           | **Oxlint / Oxfmt** (Rust製 超高速ツール)                  |
+| **テストフレームワーク** | RSpec / Minitest                  | **Vitest + @nuxt/test-utils**                             |
+| **管理GUI**              | Rails Admin / Adminer             | **Nuxt DevTools (Hub タブ)** / **NuxtHub Admin**          |
+| **インフラ管理 (IaC)**   | Terraform / Ansible / CDK         | **Pulumi (TypeScript)** (`infra/`)                        |
 
 ---
 
@@ -27,28 +29,29 @@ NuxtHub を使うことで、Cloudflare Workers のエッジインフラ（D1, K
 ├── app/
 │   ├── app.vue                 # ルートコンポーネント
 │   └── pages/
-│       └── index.vue           # 全機能（DB/KV/Blob/Cache）を試せるダッシュボード
+│       └── index.vue           # 全機能（DB/KV/Blob/Cache/Auth）を試せるダッシュボード
 ├── server/
 │   ├── api/
+│   │   ├── auth/               # 暗号化 Cookie 認証 (login, logout, me, protected)
 │   │   ├── todos/              # D1 データベース操作 (CRUD)
 │   │   ├── kv/                 # KV 操作 (Get, Set, Delete via hub:kv)
 │   │   ├── blob/               # R2 ファイル操作 (Upload, Serve, Delete via hub:blob)
 │   │   └── cached-time.ts      # エッジキャッシュ体験
 │   ├── db/
-│   │   └── schema.sqlite.ts    # NuxtHub v0.10 Drizzle スキーマ定義
-│   ├── database/
+│   │   ├── schema.sqlite.ts    # NuxtHub v0.10 Drizzle スキーマ定義
 │   │   └── migrations/         # D1 用 マイグレーション SQL
 │   └── utils/
 │       └── drizzle.ts          # 型安全な useDrizzle() ヘルパー
+├── docs/                       # 各種ドキュメント・開発ガイド
+│   ├── TUTORIAL.md             # ハンズオンチュートリアル・開発ガイド
+│   └── AUTH.md                 # 暗号化 Cookie 認証とセッション設計ガイド
+├── tests/                      # テストスイート (Vitest)
+│   ├── unit/                   # 単体テスト
+│   └── integration/            # API 統合テスト
 ├── infra/                      # Pulumi による Cloudflare インフラ定義 (IaC)
-│   ├── .env.example            # 認証情報テンプレート
-│   ├── Pulumi.yaml
-│   ├── package.json
-│   └── index.ts
 ├── wrangler.toml               # Cloudflare Pages / Workers バインディング設定
 ├── nuxt.config.ts              # Nuxt 4 & NuxtHub v0.10 設定
-├── README.md                   # 本ドキュメント
-└── TUTORIAL.md                 # 詳しいチュートリアル・ハンズオンガイド
+└── README.md                   # 本ドキュメント
 ```
 
 ---
@@ -134,6 +137,8 @@ pnpm deploy:cf
 | `pnpm typecheck`  | **vue-tsc** による TypeScript / Vue SFC の型チェック                      |
 | `pnpm test`       | **Vitest + @nuxt/test-utils** による単体テストおよび統合 API テストの実行 |
 | `pnpm test:watch` | **Vitest** によるテスト監視モード（ファイル保存時に自動再テスト）         |
+| `pnpm check`      | **一括検証**: フォーマット・Lint・型チェック・テスト・ビルドを一括実行    |
+| `pnpm check:fix`  | **一括修正 & 検証**: 自動整形・自動Lint修正・型チェック・テスト・ビルド   |
 
 ### 🗄️ データベース (D1 / Drizzle)
 
@@ -153,6 +158,7 @@ pnpm deploy:cf
 
 ---
 
-## 📖 詳しいチュートリアル
+## 📖 ドキュメント・開発ガイド
 
-ステップごとのコードの書き方、マイグレーション管理、Pulumi の詳しい設定方法については [TUTORIAL.md](./TUTORIAL.md) をご覧ください。
+- 📘 **[チュートリアル & 開発ガイド (docs/TUTORIAL.md)](./docs/TUTORIAL.md)**: ステップごとのコードの書き方、マイグレーション管理、Pulumi の詳しい設定方法
+- 🔐 **[暗号化 Cookie 認証ガイド (docs/AUTH.md)](./docs/AUTH.md)**: エッジ環境におけるセッション設計、Redis / JWT との比較、セキュリティ仕様

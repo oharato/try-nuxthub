@@ -72,4 +72,26 @@ describe("Integration Tests: NuxtHub APIs", async () => {
     expect(res.timestamp).toBeGreaterThan(0);
     expect(res.message).toContain("cached");
   });
+
+  it("暗号化 Cookie 認証（ログイン・保護API検証）が正しく動作する", async () => {
+    // 1. 未ログインでの保護 API へのアクセス -> 401 エラー
+    await expect($fetch("/api/auth/protected")).rejects.toThrow();
+
+    // 2. 誤ったパスワードでのログイン -> 401 エラー
+    await expect(
+      $fetch("/api/auth/login", {
+        method: "POST",
+        body: { email: "admin@example.com", password: "wrong_password" },
+      }),
+    ).rejects.toThrow();
+
+    // 3. 正しいログイン -> 成功
+    const loginRes = await $fetch<{ success: boolean; user: any }>("/api/auth/login", {
+      method: "POST",
+      body: { email: "admin@example.com", password: "password", name: "管理者" },
+    });
+    expect(loginRes.success).toBe(true);
+    expect(loginRes.user.email).toBe("admin@example.com");
+    expect(loginRes.user.role).toBe("admin");
+  });
 });

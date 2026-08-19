@@ -19,7 +19,9 @@
     "format": "oxfmt --write .",
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check": "oxfmt --check . && oxlint . && nuxt typecheck && vitest run && nuxt build",
+    "check:fix": "oxfmt --write . && oxlint --fix . && nuxt typecheck && vitest run && nuxt build"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
@@ -27,6 +29,7 @@
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.2",
     "nuxt": "4.3.0",
+    "nuxt-auth-utils": "^0.5.30",
     "unstorage": "^1.17.5"
   },
   "devDependencies": {
