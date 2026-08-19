@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# 同一ブランチで連続pushされた場合、古いデプロイジョブを自動キャンセルしてリソースを節約
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -14,14 +19,23 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+
+      - name: Restore Nuxt & Vite build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache
+            .nuxt/cache
+          key: ${{ runner.os }}-nuxt-build-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('app/**', 'server/**', 'nuxt.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-nuxt-build-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nuxt-build-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
