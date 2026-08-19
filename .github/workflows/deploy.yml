@@ -49,13 +49,13 @@ jobs:
         run: |
           pnpm lint &
           PID_LINT=$!
-          
+
           pnpm typecheck &
           PID_TYPE=$!
-          
+
           pnpm test &
           PID_TEST=$!
-          
+
           wait $PID_LINT && wait $PID_TYPE && wait $PID_TEST
 
       - name: Build for Cloudflare Pages

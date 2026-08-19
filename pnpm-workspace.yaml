@@ -1,0 +1,13 @@
+allowBuilds:
+  esbuild: true
+  workerd: true
+
+minimumReleaseAge: 0
+
+onlyBuiltDependencies:
+  - "@parcel/watcher"
+  - esbuild
+  - sharp
+  - unrs-resolver
+  - workerd
+  - protobufjs
