@@ -40,11 +40,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check code (format, lint, typecheck, test)
-        run: pnpm check
-
-      - name: Build for Cloudflare Pages
-        run: pnpm build:cf
+      - name: Run Checks and Build in Parallel
+        run: |
+          pnpm format
+          pnpm lint
+          
+          echo "Starting Typecheck, Test, and Build in parallel..."
+          pnpm typecheck &
+          PID_TYPE=$!
+          
+          pnpm test &
+          PID_TEST=$!
+          
+          pnpm build:cf &
+          PID_BUILD=$!
+          
+          wait $PID_TYPE && wait $PID_TEST && wait $PID_BUILD
 
       - name: Deploy to Cloudflare Pages
         run: pnpm deploy:cf
