@@ -15,22 +15,24 @@
     "db:migrations": "nuxthub database migrations list",
     "db:create": "nuxthub database migrations create",
     "postinstall": "nuxt prepare",
-    "lint": "eslint ."
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt --write .",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
-    "@nuxt/eslint": "^1.17.0",
-    "@nuxthub/core": "0.9.1",
+    "@libsql/client": "^0.17.0",
+    "@nuxthub/core": "^0.10.8",
+    "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.2",
-    "nuxt": "^3.21.11",
-    "vue": "^3.5.41",
-    "vue-router": "^4.6.4"
+    "nuxt": "4.3.0"
   },
   "devDependencies": {
-    "@nuxt/eslint-config": "^1.17.0",
-    "eslint": "^9.39.5",
     "nuxthub": "^0.9.4",
-    "typescript": "~5.8.3",
-    "vue-tsc": "^2.2.12",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.4",
     "wrangler": "^4.124.0"
   },
   "packageManager": "pnpm@10.12.1",

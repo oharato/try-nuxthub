@@ -1,209 +1,213 @@
 <script setup lang="ts">
 interface Todo {
-  id: number
-  title: string
-  completed: boolean
-  createdAt: string
+  id: number;
+  title: string;
+  completed: boolean;
+  createdAt: string;
 }
 
 interface KVItem {
-  key: string
-  value: any
+  key: string;
+  value: any;
 }
 
 interface BlobItem {
-  pathname: string
-  contentType?: string
-  size: number
-  uploadedAt: string
+  pathname: string;
+  contentType?: string;
+  size: number;
+  uploadedAt: string;
 }
 
-const activeTab = ref<'db' | 'kv' | 'blob' | 'cache'>('db')
+const activeTab = ref<"db" | "kv" | "blob" | "cache">("db");
 
 // --- Database (Todos) State & Actions ---
-const todos = ref<Todo[]>([])
-const newTodoTitle = ref('')
-const isTodoLoading = ref(false)
+const todos = ref<Todo[]>([]);
+const newTodoTitle = ref("");
+const isTodoLoading = ref(false);
 
 async function fetchTodos() {
-  isTodoLoading.value = true
+  isTodoLoading.value = true;
   try {
-    todos.value = (await $fetch('/api/todos')) as unknown as Todo[]
+    todos.value = (await $fetch("/api/todos")) as unknown as Todo[];
   } catch (e) {
-    console.error('Failed to fetch todos', e)
+    console.error("Failed to fetch todos", e);
   } finally {
-    isTodoLoading.value = false
+    isTodoLoading.value = false;
   }
 }
 
 async function addTodo() {
-  if (!newTodoTitle.value.trim()) return
+  if (!newTodoTitle.value.trim()) return;
   try {
-    const created = (await $fetch('/api/todos', {
-      method: 'POST',
-      body: { title: newTodoTitle.value.trim() }
-    })) as unknown as Todo
-    todos.value.unshift(created)
-    newTodoTitle.value = ''
+    const created = (await $fetch("/api/todos", {
+      method: "POST",
+      body: { title: newTodoTitle.value.trim() },
+    })) as unknown as Todo;
+    todos.value.unshift(created);
+    newTodoTitle.value = "";
   } catch (e) {
-    alert('Failed to add todo')
+    alert("Failed to add todo");
   }
 }
 
 async function toggleTodo(todo: Todo) {
   try {
     const updated = (await $fetch(`/api/todos/${todo.id}`, {
-      method: 'PATCH',
-      body: { completed: !todo.completed }
-    })) as unknown as Todo
-    todo.completed = updated.completed
+      method: "PATCH",
+      body: { completed: !todo.completed },
+    })) as unknown as Todo;
+    todo.completed = updated.completed;
   } catch (e) {
-    alert('Failed to update todo')
+    alert("Failed to update todo");
   }
 }
 
 async function deleteTodo(id: number) {
   try {
-    await $fetch(`/api/todos/${id}`, { method: 'DELETE' })
-    todos.value = todos.value.filter(t => t.id !== id)
+    await $fetch(`/api/todos/${id}`, { method: "DELETE" });
+    todos.value = todos.value.filter((t) => t.id !== id);
   } catch (e) {
-    alert('Failed to delete todo')
+    alert("Failed to delete todo");
   }
 }
 
 // --- KV State & Actions ---
-const kvList = ref<KVItem[]>([])
-const newKvKey = ref('')
-const newKvValue = ref('')
-const isKvLoading = ref(false)
+const kvList = ref<KVItem[]>([]);
+const newKvKey = ref("");
+const newKvValue = ref("");
+const isKvLoading = ref(false);
 
 async function fetchKV() {
-  isKvLoading.value = true
+  isKvLoading.value = true;
   try {
-    kvList.value = (await $fetch('/api/kv')) as unknown as KVItem[]
+    kvList.value = (await $fetch("/api/kv")) as unknown as KVItem[];
   } catch (e) {
-    console.error('Failed to fetch KV', e)
+    console.error("Failed to fetch KV", e);
   } finally {
-    isKvLoading.value = false
+    isKvLoading.value = false;
   }
 }
 
 async function setKV() {
-  if (!newKvKey.value.trim()) return
+  if (!newKvKey.value.trim()) return;
   try {
-    let parsedValue: any = newKvValue.value
+    let parsedValue: any = newKvValue.value;
     try {
-      parsedValue = JSON.parse(newKvValue.value)
+      parsedValue = JSON.parse(newKvValue.value);
     } catch {
       // keep as string if not JSON
     }
 
-    await $fetch('/api/kv', {
-      method: 'POST',
-      body: { key: newKvKey.value.trim(), value: parsedValue }
-    })
-    newKvKey.value = ''
-    newKvValue.value = ''
-    await fetchKV()
+    await $fetch("/api/kv", {
+      method: "POST",
+      body: { key: newKvKey.value.trim(), value: parsedValue },
+    });
+    newKvKey.value = "";
+    newKvValue.value = "";
+    await fetchKV();
   } catch (e) {
-    alert('Failed to set KV')
+    alert("Failed to set KV");
   }
 }
 
 async function deleteKV(key: string) {
   try {
-    await $fetch(`/api/kv/${encodeURIComponent(key)}`, { method: 'DELETE' })
-    await fetchKV()
+    await $fetch(`/api/kv/${encodeURIComponent(key)}`, { method: "DELETE" });
+    await fetchKV();
   } catch (e) {
-    alert('Failed to delete KV')
+    alert("Failed to delete KV");
   }
 }
 
 // --- Blob (R2) State & Actions ---
-const blobs = ref<BlobItem[]>([])
-const fileInput = ref<HTMLInputElement | null>(null)
-const isBlobLoading = ref(false)
-const isUploading = ref(false)
+const blobs = ref<BlobItem[]>([]);
+const fileInput = ref<HTMLInputElement | null>(null);
+const isBlobLoading = ref(false);
+const isUploading = ref(false);
 
 async function fetchBlobs() {
-  isBlobLoading.value = true
+  isBlobLoading.value = true;
   try {
-    const res = (await $fetch('/api/blob')) as any
-    blobs.value = Array.isArray(res) ? res : (res?.blobs || [])
+    const res = (await $fetch("/api/blob")) as any;
+    blobs.value = Array.isArray(res) ? res : res?.blobs || [];
   } catch (e) {
-    console.error('Failed to fetch blobs', e)
+    console.error("Failed to fetch blobs", e);
   } finally {
-    isBlobLoading.value = false
+    isBlobLoading.value = false;
   }
 }
 
 async function handleFileUpload(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
 
-  isUploading.value = true
-  const formData = new FormData()
-  formData.append('file', file)
+  isUploading.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
 
   try {
-    await $fetch('/api/blob/upload', {
-      method: 'POST',
-      body: formData
-    })
-    if (fileInput.value) fileInput.value.value = ''
-    await fetchBlobs()
+    await $fetch("/api/blob/upload", {
+      method: "POST",
+      body: formData,
+    });
+    if (fileInput.value) fileInput.value.value = "";
+    await fetchBlobs();
   } catch (e) {
-    alert('Failed to upload file')
+    alert("Failed to upload file");
   } finally {
-    isUploading.value = false
+    isUploading.value = false;
   }
 }
 
 async function deleteBlob(pathname: string) {
   try {
     await $fetch(`/api/blob/${encodeURIComponent(pathname)}`, {
-      method: 'DELETE'
-    })
-    await fetchBlobs()
+      method: "DELETE",
+    });
+    await fetchBlobs();
   } catch (e) {
-    alert('Failed to delete blob')
+    alert("Failed to delete blob");
   }
 }
 
 function formatBytes(bytes: number) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 // --- Cache State & Actions ---
-const cacheData = ref<{ generatedAt: string; timestamp: number; message: string } | null>(null)
-const clientFetchedAt = ref<string>('')
-const isCacheLoading = ref(false)
+const cacheData = ref<{ generatedAt: string; timestamp: number; message: string } | null>(null);
+const clientFetchedAt = ref<string>("");
+const isCacheLoading = ref(false);
 
 async function fetchCacheData() {
-  isCacheLoading.value = true
+  isCacheLoading.value = true;
   try {
-    const res = (await $fetch('/api/cached-time')) as { generatedAt: string; timestamp: number; message: string }
-    cacheData.value = res
-    clientFetchedAt.value = new Date().toLocaleTimeString()
+    const res = await $fetch<{
+      generatedAt: string;
+      timestamp: number;
+      message: string;
+    }>("/api/cached-time");
+    cacheData.value = res;
+    clientFetchedAt.value = new Date().toLocaleTimeString();
   } catch (e) {
-    console.error('Failed to fetch cached data', e)
+    console.error("Failed to fetch cached data", e);
   } finally {
-    isCacheLoading.value = false
+    isCacheLoading.value = false;
   }
 }
 
 // Initial fetch
 onMounted(() => {
-  fetchTodos()
-  fetchKV()
-  fetchBlobs()
-  fetchCacheData()
-})
+  fetchTodos();
+  fetchKV();
+  fetchBlobs();
+  fetchCacheData();
+});
 </script>
 
 <template>
@@ -211,7 +215,7 @@ onMounted(() => {
     <!-- Header -->
     <header class="header">
       <div class="logo-area">
-        <span class="badge">TypeScript + Cloudflare Workers</span>
+        <span class="badge">Nuxt 4 + NuxtHub v0.10 + Cloudflare</span>
         <h1>NuxtHub Fullstack Demo</h1>
         <p class="subtitle">
           Ruby on Rails のような「設定不要・オールインワン」な開発体験をエッジサーバーで実現
@@ -226,28 +230,16 @@ onMounted(() => {
 
     <!-- Navigation Tabs -->
     <nav class="nav-tabs">
-      <button
-        :class="['tab-btn', { active: activeTab === 'db' }]"
-        @click="activeTab = 'db'"
-      >
+      <button :class="['tab-btn', { active: activeTab === 'db' }]" @click="activeTab = 'db'">
         🗄️ Database (D1 + Drizzle)
       </button>
-      <button
-        :class="['tab-btn', { active: activeTab === 'kv' }]"
-        @click="activeTab = 'kv'"
-      >
+      <button :class="['tab-btn', { active: activeTab === 'kv' }]" @click="activeTab = 'kv'">
         🔑 KV (Key-Value)
       </button>
-      <button
-        :class="['tab-btn', { active: activeTab === 'blob' }]"
-        @click="activeTab = 'blob'"
-      >
+      <button :class="['tab-btn', { active: activeTab === 'blob' }]" @click="activeTab = 'blob'">
         📦 Blob (R2 Storage)
       </button>
-      <button
-        :class="['tab-btn', { active: activeTab === 'cache' }]"
-        @click="activeTab = 'cache'"
-      >
+      <button :class="['tab-btn', { active: activeTab === 'cache' }]" @click="activeTab = 'cache'">
         ⚡ Cache (Edge Handler)
       </button>
     </nav>
@@ -259,7 +251,8 @@ onMounted(() => {
         <div class="section-header">
           <h2>Cloudflare D1 (SQLite) + Drizzle ORM</h2>
           <p>
-            Rails の <code>ActiveRecord</code> のように、スキーマ定義・マイグレーション・クエリが TypeScript で型安全に行えます。
+            Rails の <code>ActiveRecord</code> のように、スキーマ定義・マイグレーション・クエリが
+            TypeScript で型安全に行えます。
           </p>
         </div>
 
@@ -297,7 +290,10 @@ onMounted(() => {
         </ul>
 
         <div class="code-preview">
-          <code>// server/api/todos/index.post.ts<br/>const db = useDrizzle()<br/>await db.insert(todos).values({ title: body.title })</code>
+          <code
+            >// server/api/todos/index.post.ts<br />const db = useDrizzle()<br />await
+            db.insert(schema.todos).values({ title: body.title })</code
+          >
         </div>
       </section>
 
@@ -306,7 +302,8 @@ onMounted(() => {
         <div class="section-header">
           <h2>Cloudflare KV (Key-Value Store)</h2>
           <p>
-            グローバルに高速アクセス可能な Key-Value ストア。セッション、フラグ、一時設定値の保存に最適です。
+            グローバルに高速アクセス可能な Key-Value
+            ストア。セッション、フラグ、一時設定値の保存に最適です。
           </p>
         </div>
 
@@ -335,15 +332,18 @@ onMounted(() => {
               <span class="kv-key">{{ item.key }}</span>
               <button @click="deleteKV(item.key)" class="btn-delete">✕</button>
             </div>
-            <pre class="kv-value">{{ typeof item.value === 'object' ? JSON.stringify(item.value, null, 2) : item.value }}</pre>
+            <pre class="kv-value">{{
+              typeof item.value === "object" ? JSON.stringify(item.value, null, 2) : item.value
+            }}</pre>
           </div>
-          <div v-if="kvList.length === 0" class="empty-state">
-            KVエントリはありません。
-          </div>
+          <div v-if="kvList.length === 0" class="empty-state">KVエントリはありません。</div>
         </div>
 
         <div class="code-preview">
-          <code>// server/api/kv/index.post.ts<br/>await hubKV().setItem(body.key, body.value)</code>
+          <code
+            >// server/api/kv/index.post.ts<br />import { kv } from 'hub:kv'<br />await
+            kv.set(body.key, body.value)</code
+          >
         </div>
       </section>
 
@@ -352,7 +352,9 @@ onMounted(() => {
         <div class="section-header">
           <h2>Cloudflare R2 (Blob / Object Storage)</h2>
           <p>
-            Rails の <code>ActiveStorage</code> のように、S3互換のオブジェクトストレージへ直接ファイルをアップロード・配信。
+            Rails の
+            <code>ActiveStorage</code>
+            のように、S3互換のオブジェクトストレージへ直接ファイルをアップロード・配信。
           </p>
         </div>
 
@@ -366,7 +368,7 @@ onMounted(() => {
             id="file-upload"
           />
           <label for="file-upload" class="upload-btn-label">
-            {{ isUploading ? 'アップロード中...' : '📁 ファイルを選択してアップロード' }}
+            {{ isUploading ? "アップロード中..." : "📁 ファイルを選択してアップロード" }}
           </label>
         </div>
 
@@ -378,11 +380,7 @@ onMounted(() => {
               <span class="blob-size">{{ formatBytes(file.size) }}</span>
             </div>
             <div class="blob-actions">
-              <a
-                :href="`/api/blob/${file.pathname}`"
-                target="_blank"
-                class="btn-secondary"
-              >
+              <a :href="`/api/blob/${file.pathname}`" target="_blank" class="btn-secondary">
                 表示 / 取得
               </a>
               <button @click="deleteBlob(file.pathname)" class="btn-delete">✕</button>
@@ -394,7 +392,10 @@ onMounted(() => {
         </div>
 
         <div class="code-preview">
-          <code>// server/api/blob/upload.post.ts<br/>await hubBlob().put(pathname, file)</code>
+          <code
+            >// server/api/blob/upload.post.ts<br />import { blob } from 'hub:blob'<br />await
+            blob.put(pathname, file)</code
+          >
         </div>
       </section>
 
@@ -403,13 +404,14 @@ onMounted(() => {
         <div class="section-header">
           <h2>Edge Handler Caching</h2>
           <p>
-            <code>defineCachedEventHandler</code> によるエッジでの自動キャッシュ（TTL: 10秒）。ボタンを連打しても10秒間は同じ生成時刻が返されます。
+            <code>defineCachedEventHandler</code> によるエッジでの自動キャッシュ（TTL:
+            10秒）。ボタンを連打しても10秒間は同じ生成時刻が返されます。
           </p>
         </div>
 
         <div class="cache-demo">
           <button @click="fetchCacheData" class="btn-primary" :disabled="isCacheLoading">
-            {{ isCacheLoading ? '取得中...' : '🔄 データを再フェッチ' }}
+            {{ isCacheLoading ? "取得中..." : "🔄 データを再フェッチ" }}
           </button>
 
           <div v-if="cacheData" class="cache-result">
@@ -419,14 +421,19 @@ onMounted(() => {
             </div>
             <div class="cache-row">
               <strong>サーバー生成時刻 (Generated At):</strong>
-              <span class="highlight">{{ new Date(cacheData.generatedAt).toLocaleTimeString() }}</span>
+              <span class="highlight">{{
+                new Date(cacheData.generatedAt).toLocaleTimeString()
+              }}</span>
             </div>
             <p class="cache-note">{{ cacheData.message }}</p>
           </div>
         </div>
 
         <div class="code-preview">
-          <code>// server/api/cached-time.ts<br/>export default defineCachedEventHandler(handler, { maxAge: 10 })</code>
+          <code
+            >// server/api/cached-time.ts<br />export default defineCachedEventHandler(handler, {
+            maxAge: 10 })</code
+          >
         </div>
       </section>
     </main>
@@ -434,12 +441,19 @@ onMounted(() => {
     <!-- Architecture & Features summary footer -->
     <footer class="footer-info">
       <div class="info-card">
-        <h3>🚀 Railsライクな高速開発サイクル</h3>
-        <p>ローカル実行 <code>pnpm dev</code> では Cloudflare の workerd 上で D1/KV/R2 が自動エミュレートされ、設定ゼロで即座に開発を開始できます。</p>
+        <h3>🚀 Nuxt 4 + Oxlint による高速開発サイクル</h3>
+        <p>
+          ローカル実行 <code>pnpm dev</code> では Cloudflare の workerd 上で D1/KV/R2
+          が自動エミュレートされ、Oxlint / Oxfmt
+          による高速な解析・フォーマットとともに設定ゼロで即座に開発を開始できます。
+        </p>
       </div>
       <div class="info-card">
         <h3>☁️ IaC (Pulumi) との連携</h3>
-        <p>本番用の D1、KV、R2 リソースは Pulumi (TypeScript) で宣言的に管理可能。プロジェクト内の <code>infra/</code> ディレクトリを参照してください。</p>
+        <p>
+          本番用の D1、KV、R2 リソースは Pulumi (TypeScript) で宣言的に管理可能。プロジェクト内の
+          <code>infra/</code> ディレクトリを参照してください。
+        </p>
       </div>
     </footer>
   </div>
@@ -448,7 +462,8 @@ onMounted(() => {
 <style scoped>
 :global(body) {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f8fafc;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
@@ -692,21 +707,24 @@ h1 {
   font-size: 0.9rem;
 }
 
-.kv-grid, .blob-grid {
+.kv-grid,
+.blob-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
 
-.kv-card, .blob-card {
+.kv-card,
+.blob-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 14px;
 }
 
-.kv-card-header, .blob-actions {
+.kv-card-header,
+.blob-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;

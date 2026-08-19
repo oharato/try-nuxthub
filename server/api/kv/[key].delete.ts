@@ -1,12 +1,13 @@
+import { kv } from "hub:kv";
+
 export default defineEventHandler(async (event) => {
-  const key = getRouterParam(event, 'key')
+  const key = getRouterParam(event, "key");
 
   if (!key) {
-    throw createError({ statusCode: 400, statusMessage: 'Key is required' })
+    throw createError({ statusCode: 400, statusMessage: "Key is required" });
   }
 
-  const kv = hubKV()
-  await kv.removeItem(decodeURIComponent(key))
+  await kv.del(decodeURIComponent(key));
 
-  return { success: true }
-})
+  return { success: true };
+});

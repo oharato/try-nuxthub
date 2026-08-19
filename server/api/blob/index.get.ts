@@ -1,4 +1,5 @@
+import { blob } from "hub:blob";
+
 export default defineEventHandler(async () => {
-  const blob = hubBlob()
-  return await blob.list()
-})
+  return await blob.list();
+});

@@ -1,10 +1,11 @@
 # 📘 NuxtHub × Cloudflare チュートリアル & 開発ガイド
 
-このチュートリアルでは、**TypeScript × Cloudflare Workers** 環境で Ruby on Rails のような「設定不要・オールインワン・型安全」な開発体験を実践し、**Pulumi (TypeScript)** を使ったインフラ構築とデプロイまでの全工程を解説します。
+このチュートリアルでは、**Nuxt 4 + NuxtHub v0.10 + TypeScript × Cloudflare Workers** 環境で Ruby on Rails のような「設定不要・オールインワン・型安全」な開発体験を実践し、**Pulumi (TypeScript)** を使ったインフラ構築とデプロイまでの全工程を解説します。
 
 ---
 
 ## 📑 目次
+
 1. [NuxtHub のセットアップと設定](#1-nuxthub-のセットアップと設定)
 2. [LAN からの接続設定 (0.0.0.0 リッスン)](#2-lan-からの接続設定-0000-リッスン)
 3. [データベース (D1 + Drizzle ORM) を使う](#3-データベース-d1--drizzle-orm-を使う)
@@ -23,14 +24,14 @@ NuxtHub の各機能は `nuxt.config.ts` で有効化するだけで、Cloudflar
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['@nuxthub/core'],
+  modules: ["@nuxthub/core"],
   hub: {
-    database: true, // D1 (SQLite)
-    kv: true,       // Workers KV
-    blob: true,     // R2 Storage
-    cache: true     // Edge Nitro Cache
-  }
-})
+    db: "sqlite", // D1 (SQLite)
+    kv: true, // Workers KV
+    blob: true, // R2 Storage
+    cache: true, // Edge Nitro Cache
+  },
+});
 ```
 
 ---
@@ -43,10 +44,10 @@ export default defineNuxtConfig({
 // nuxt.config.ts
 export default defineNuxtConfig({
   devServer: {
-    host: '0.0.0.0',
-    port: 3000
-  }
-})
+    host: "0.0.0.0",
+    port: 3000,
+  },
+});
 ```
 
 ---
@@ -55,35 +56,41 @@ export default defineNuxtConfig({
 
 Rails の `ActiveRecord` に相当する機能です。TypeScript でスキーマを定義し、型安全にクエリを実行します。
 
-### ① スキーマの定義 (`server/database/schema.ts`)
-```ts
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+### ① スキーマの定義 (`server/db/schema.sqlite.ts`)
 
-export const todos = sqliteTable('todos', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  title: text('title').notNull(),
-  completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
-})
+```ts
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+
+export const todos = sqliteTable("todos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  completed: integer("completed", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
 ```
 
 ### ② ヘルパー関数の作成 (`server/utils/drizzle.ts`)
-```ts
-import { drizzle } from 'drizzle-orm/d1'
-import * as schema from '../database/schema'
 
-export { sql, eq, and, or, desc, asc } from 'drizzle-orm'
-export const tables = schema
+NuxtHub v0.10 では `import { db, schema } from 'hub:db'` を使って Drizzle インスタンスを直接取得できます。
+
+```ts
+import { db, schema } from "hub:db";
+
+export { sql, eq, and, or, desc, asc } from "drizzle-orm";
+export const tables = schema;
 
 export function useDrizzle() {
-  return drizzle(hubDatabase(), { schema })
+  return db;
 }
 
-export type Todo = typeof schema.todos.$inferSelect
-export type NewTodo = typeof schema.todos.$inferInsert
+export type Todo = typeof schema.todos.$inferSelect;
+export type NewTodo = typeof schema.todos.$inferInsert;
 ```
 
 ### ③ マイグレーションの管理
+
 ローカル開発時は `pnpm dev` 起動時に `server/database/migrations` 内の SQL が自動適用されます。
 
 ```bash
@@ -95,68 +102,83 @@ pnpm db:create <migration_name>
 ```
 
 ### ④ API エンドポイントの実装
-`useDrizzle()` ヘルパーを使って Rails ライクにクエリを記述します。
+
+`useDrizzle()` または `import { db, schema } from 'hub:db'` を使って Rails ライクにクエリを記述します。
 
 ```ts
 // server/api/todos/index.post.ts
-import { todos } from '../../database/schema'
+import { todos } from "../../database/schema";
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  const db = useDrizzle()
-  
-  // 型安全な INSERT
-  const [todo] = await db.insert(todos).values({
-    title: body.title
-  }).returning()
+  const body = await readBody(event);
+  const db = useDrizzle();
 
-  return todo
-})
+  // 型安全な INSERT
+  const [todo] = await db
+    .insert(todos)
+    .values({
+      title: body.title,
+    })
+    .returning();
+
+  return todo;
+});
 ```
 
 ---
 
 ## 4. KV (Key-Value Store) を使う
 
-Rails の `Rails.cache` や Redis のように、低レイテンシでグローバルに伝播する Key-Value データを扱えます。
+Rails の `Rails.cache` や Redis のように、低レイテンシでグローバルに伝播する Key-Value データを扱えます。NuxtHub v0.10 では `hub:kv` からインポートします。
 
 ```ts
-// 保存 (JSONオブジェクトもそのまま保存可能)
-await hubKV().setItem('site_settings', { maintenance: false, banner: 'Welcome!' })
+import { kv } from "hub:kv";
+
+// 保存 (オブジェクトもそのまま保存可能)
+await kv.set("site_settings", { maintenance: false, banner: "Welcome!" });
 
 // 取得
-const settings = await hubKV().getItem('site_settings')
+const settings = await kv.get("site_settings");
+
+// キー一覧取得
+const keys = await kv.keys();
 
 // 削除
-await hubKV().removeItem('site_settings')
+await kv.del("site_settings");
 ```
 
 ---
 
 ## 5. Blob (R2 オブジェクトストレージ) を使う
 
-Rails の `ActiveStorage` に相当する機能です。S3互換の Cloudflare R2 ストレージへファイルのアップロードや配信を行います。
+Rails の `ActiveStorage` に相当する機能です。S3互換の Cloudflare R2 ストレージへファイルのアップロードや配信を行います。NuxtHub v0.10 では `hub:blob` からインポートします。
 
 ### ① ファイルのアップロード (`server/api/blob/upload.post.ts`)
-```ts
-export default defineEventHandler(async (event) => {
-  const form = await readFormData(event)
-  const file = form.get('file') as File
 
-  const pathname = `${Date.now()}-${file.name}`
-  const blob = await hubBlob().put(pathname, file)
-  return blob
-})
+```ts
+import { blob } from "hub:blob";
+
+export default defineEventHandler(async (event) => {
+  const form = await readFormData(event);
+  const file = form.get("file") as File;
+
+  const pathname = `${Date.now()}-${file.name}`;
+  const uploadedBlob = await blob.put(pathname, file);
+  return uploadedBlob;
+});
 ```
 
 ### ② ファイルの直接配信 (`server/api/blob/[pathname].get.ts`)
-```ts
-export default defineEventHandler(async (event) => {
-  const pathname = getRouterParam(event, 'pathname')
-  if (!pathname) throw createError({ statusCode: 400, statusMessage: 'Pathname is required' })
 
-  return hubBlob().serve(event, decodeURIComponent(pathname))
-})
+```ts
+import { blob } from "hub:blob";
+
+export default defineEventHandler(async (event) => {
+  const pathname = getRouterParam(event, "pathname");
+  if (!pathname) throw createError({ statusCode: 400, statusMessage: "Pathname is required" });
+
+  return blob.serve(event, decodeURIComponent(pathname));
+});
 ```
 
 ---
@@ -172,14 +194,14 @@ export default defineCachedEventHandler(
     return {
       timestamp: Date.now(),
       generatedAt: new Date().toISOString(),
-      message: 'This response is cached at the edge for 10 seconds.'
-    }
+      message: "This response is cached at the edge for 10 seconds.",
+    };
   },
   {
     maxAge: 10, // 10秒間キャッシュ
-    name: 'cached-time'
-  }
-)
+    name: "cached-time",
+  },
+);
 ```
 
 ---
@@ -204,16 +226,17 @@ NuxtHub の管理 GUI は **Nuxt DevTools** に統合されています。
 Cloudflare ダッシュボード（**「My Profile」→「API Tokens」→「Create Token」→「Create Custom Token」**）から、以下の権限を持つトークンを作成します：
 
 | カテゴリ (Scope) | リソース名 (Permission) | 権限 (Access Level) |
-| :--- | :--- | :--- |
-| **Account** | **D1** | **Edit** |
-| **Account** | **Workers KV Storage** | **Edit** |
-| **Account** | **Workers R2 Storage** | **Edit** |
-| **Account** | **Cloudflare Pages** | **Edit** |
-| **Account** | **Account Settings** | **Read** (推奨) |
+| :--------------- | :---------------------- | :------------------ |
+| **Account**      | **D1**                  | **Edit**            |
+| **Account**      | **Workers KV Storage**  | **Edit**            |
+| **Account**      | **Workers R2 Storage**  | **Edit**            |
+| **Account**      | **Cloudflare Pages**    | **Edit**            |
+| **Account**      | **Account Settings**    | **Read** (推奨)     |
 
 > **Account ID の確認場所**: Cloudflare ダッシュボードのトップ画面右サイドバー、または URL 内に表示されている 32 桁の英数字です。
 
 ### ② 設定ファイル (`infra/.env`) の準備
+
 `infra/.env.example` をコピーして Cloudflare 認証情報を記入します：
 
 ```bash
@@ -239,6 +262,7 @@ pnpm infra:apply
 ```
 
 ### ③ 出力された ID を `wrangler.toml` に記入
+
 `pulumi up` 完了後、ターミナルに表示される ID（または `pulumi stack output` で確認）をプロジェクトルートの `wrangler.toml` に設定します：
 
 ```toml
@@ -271,6 +295,7 @@ pnpm db:migrate:prod
 ```
 
 ### ⑤ アプリケーションのデプロイ
+
 プロジェクトルートでビルド＆デプロイを実行します：
 
 ```bash
