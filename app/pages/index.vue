@@ -90,6 +90,7 @@ async function fetchKV() {
 
 async function setKV() {
   if (!newKvKey.value.trim()) return;
+  const key = newKvKey.value.trim();
   try {
     let parsedValue: any = newKvValue.value;
     try {
@@ -100,11 +101,19 @@ async function setKV() {
 
     await $fetch("/api/kv", {
       method: "POST",
-      body: { key: newKvKey.value.trim(), value: parsedValue },
+      body: { key, value: parsedValue },
     });
+
+    // Optimistic UI: 即座にローカル一覧を更新（Cloudflare KV の list伝播遅延対策）
+    const existingIndex = kvList.value.findIndex((item) => item.key === key);
+    if (existingIndex >= 0) {
+      kvList.value[existingIndex].value = parsedValue;
+    } else {
+      kvList.value.unshift({ key, value: parsedValue });
+    }
+
     newKvKey.value = "";
     newKvValue.value = "";
-    await fetchKV();
   } catch (e) {
     alert("Failed to set KV");
   }
@@ -113,7 +122,8 @@ async function setKV() {
 async function deleteKV(key: string) {
   try {
     await $fetch(`/api/kv/${encodeURIComponent(key)}`, { method: "DELETE" });
-    await fetchKV();
+    // Optimistic UI: 即座に一覧から除外
+    kvList.value = kvList.value.filter((item) => item.key !== key);
   } catch (e) {
     alert("Failed to delete KV");
   }

@@ -115,37 +115,41 @@ pnpm deploy:cf
 ## 🛠️ コマンド一覧 (npm scripts)
 
 ### 💻 開発・ビルド
-| コマンド | 説明 |
-| :--- | :--- |
-| `pnpm dev` | ローカル開発サーバー起動（D1/KV/R2 自動エミュレート、`0.0.0.0` リッスンで LAN 公開対応） |
-| `pnpm build` | 本番用ビルド（Node / 汎用サーバー用 `.output` ディレクトリ生成） |
-| `pnpm generate` | 静的サイト生成（SSG） |
-| `pnpm preview` | ローカルの Cloudflare Pages エミュレータで `dist/` 出力をプレビュー |
-| `pnpm postinstall` | `pnpm install` 実行後に自動で `.nuxt` の型定義を生成 (`nuxt prepare`) |
+
+| コマンド           | 説明                                                                                     |
+| :----------------- | :--------------------------------------------------------------------------------------- |
+| `pnpm dev`         | ローカル開発サーバー起動（D1/KV/R2 自動エミュレート、`0.0.0.0` リッスンで LAN 公開対応） |
+| `pnpm build`       | 本番用ビルド（Node / 汎用サーバー用 `.output` ディレクトリ生成）                         |
+| `pnpm generate`    | 静的サイト生成（SSG）                                                                    |
+| `pnpm preview`     | ローカルの Cloudflare Pages エミュレータで `dist/` 出力をプレビュー                      |
+| `pnpm postinstall` | `pnpm install` 実行後に自動で `.nuxt` の型定義を生成 (`nuxt prepare`)                    |
 
 ### 🧹 コード品質・テスト
-| コマンド | 説明 |
-| :--- | :--- |
-| `pnpm lint` | **Oxlint** による超高速静的解析 |
-| `pnpm lint:fix` | **Oxlint** による静的解析と自動修正 |
-| `pnpm format` | **Oxfmt** によるコードベース全体の高速自動整形 |
-| `pnpm typecheck` | **vue-tsc** による TypeScript / Vue SFC の型チェック |
-| `pnpm test` | **Vitest + @nuxt/test-utils** による単体テストおよび統合 API テストの実行 |
-| `pnpm test:watch` | **Vitest** によるテスト監視モード（ファイル保存時に自動再テスト） |
+
+| コマンド          | 説明                                                                      |
+| :---------------- | :------------------------------------------------------------------------ |
+| `pnpm lint`       | **Oxlint** による超高速静的解析                                           |
+| `pnpm lint:fix`   | **Oxlint** による静的解析と自動修正                                       |
+| `pnpm format`     | **Oxfmt** によるコードベース全体の高速自動整形                            |
+| `pnpm typecheck`  | **vue-tsc** による TypeScript / Vue SFC の型チェック                      |
+| `pnpm test`       | **Vitest + @nuxt/test-utils** による単体テストおよび統合 API テストの実行 |
+| `pnpm test:watch` | **Vitest** によるテスト監視モード（ファイル保存時に自動再テスト）         |
 
 ### 🗄️ データベース (D1 / Drizzle)
-| コマンド | 説明 |
-| :--- | :--- |
-| `pnpm db:generate` | スキーマ定義 (`server/db/schema.sqlite.ts`) の変更を検知し、マイグレーション SQL を自動生成 |
-| `pnpm db:migrate:prod` | 本番 Cloudflare D1 データベースにマイグレーション SQL を適用 |
+
+| コマンド               | 説明                                                                                        |
+| :--------------------- | :------------------------------------------------------------------------------------------ |
+| `pnpm db:generate`     | スキーマ定義 (`server/db/schema.sqlite.ts`) の変更を検知し、マイグレーション SQL を自動生成 |
+| `pnpm db:migrate:prod` | 本番 Cloudflare D1 データベースにマイグレーション SQL を適用                                |
 
 ### ☁️ インフラ (Pulumi) & デプロイ
-| コマンド | 説明 |
-| :--- | :--- |
-| `pnpm infra:preview` | **Pulumi** による Cloudflare リソース（D1 / KV / R2 / Pages）の変更事前確認 (dry-run) |
-| `pnpm infra:apply` | **Pulumi** による Cloudflare リソースの作成・更新 |
-| `pnpm infra:destroy` | **Pulumi** で作成した Cloudflare リソースの破棄 |
-| `pnpm deploy:cf` | `NITRO_PRESET=cloudflare_pages` で `dist/` にビルドし、Wrangler 経由で Cloudflare Pages へ直接デプロイ |
+
+| コマンド             | 説明                                                                                                   |
+| :------------------- | :----------------------------------------------------------------------------------------------------- |
+| `pnpm infra:preview` | **Pulumi** による Cloudflare リソース（D1 / KV / R2 / Pages）の変更事前確認 (dry-run)                  |
+| `pnpm infra:apply`   | **Pulumi** による Cloudflare リソースの作成・更新                                                      |
+| `pnpm infra:destroy` | **Pulumi** で作成した Cloudflare リソースの破棄                                                        |
+| `pnpm deploy:cf`     | `NITRO_PRESET=cloudflare_pages` で `dist/` にビルドし、Wrangler 経由で Cloudflare Pages へ直接デプロイ |
 
 ---
 
