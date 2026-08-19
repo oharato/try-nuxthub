@@ -6,6 +6,13 @@ export default defineNuxtConfig({
   // https://devtools.nuxt.com
   devtools: { enabled: true },
 
+  // Build optimizations
+  telemetry: false,
+  sourcemap: {
+    server: false,
+    client: false,
+  },
+
   // Dev server configuration for LAN access
   devServer: {
     host: "0.0.0.0",
