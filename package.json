@@ -7,7 +7,7 @@
     "dev": "nuxt dev --host 0.0.0.0",
     "generate": "nuxt generate",
     "preview": "npx nuxthub preview",
-    "deploy:cf": "NITRO_PRESET=cloudflare_pages nuxt build && node --env-file=infra/.env ./node_modules/wrangler/bin/wrangler.js pages deploy dist --project-name=try-nuxthub",
+    "deploy:cf": "NITRO_PRESET=cloudflare_pages nuxt build && wrangler pages deploy dist --project-name=try-nuxthub --branch=main",
     "infra:preview": "pnpm --dir infra preview",
     "infra:apply": "pnpm --dir infra apply",
     "infra:destroy": "pnpm --dir infra destroy",
