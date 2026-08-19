@@ -40,8 +40,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check code (format, lint, typecheck, test, build)
+      - name: Check code (format, lint, typecheck, test)
         run: pnpm check
+
+      - name: Build for Cloudflare Pages
+        run: pnpm build:cf
 
       - name: Deploy to Cloudflare Pages
         run: pnpm deploy:cf

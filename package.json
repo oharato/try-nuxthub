@@ -7,7 +7,8 @@
     "dev": "nuxt dev --host 0.0.0.0",
     "generate": "nuxt generate",
     "preview": "npx nuxthub preview",
-    "deploy:cf": "NITRO_PRESET=cloudflare_pages nuxt build && wrangler pages deploy dist --project-name=try-nuxthub --branch=main",
+    "build:cf": "NITRO_PRESET=cloudflare_pages nuxt build",
+    "deploy:cf": "wrangler pages deploy dist --project-name=try-nuxthub --branch=main",
     "infra:preview": "pnpm --dir infra preview",
     "infra:apply": "pnpm --dir infra apply",
     "infra:destroy": "pnpm --dir infra destroy",
@@ -20,8 +21,8 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "oxfmt --check . && oxlint . && nuxt typecheck && vitest run && nuxt build",
-    "check:fix": "oxfmt --write . && oxlint --fix . && nuxt typecheck && vitest run && nuxt build"
+    "check": "oxfmt --check . && oxlint . && nuxt typecheck && vitest run",
+    "check:fix": "oxfmt --write . && oxlint --fix . && nuxt typecheck && vitest run"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
