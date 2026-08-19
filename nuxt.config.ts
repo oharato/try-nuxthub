@@ -25,6 +25,10 @@ export default defineNuxtConfig({
       password:
         process.env.NUXT_SESSION_PASSWORD ||
         "default-dev-session-password-must-be-at-least-32-chars-long!",
+      cookie: {
+        secure: false,
+        sameSite: "lax",
+      },
     },
     public: {
       // Can be overridden by NUXT_PUBLIC_HELLO_TEXT environment variable
