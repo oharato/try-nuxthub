@@ -15,41 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Quality Checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run lint, typecheck, test in parallel
-        run: |
-          pnpm format
-          pnpm lint &
-          PID_LINT=$!
-
-          pnpm typecheck &
-          PID_TYPE=$!
-
-          pnpm test &
-          PID_TEST=$!
-
-          wait $PID_LINT && wait $PID_TYPE && wait $PID_TEST
-
-  build:
-    name: Build for Cloudflare
+  deploy:
+    name: Build, Test & Deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -78,41 +45,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build for Cloudflare Pages
-        run: pnpm build:cf
+      - name: Run Build & Quality Checks in Parallel (Isolated Directories)
+        run: |
+          # テスト専用の作業ディレクトリをハードリンクで一瞬で複製 (0.1秒)
+          mkdir -p /tmp/test-runner
+          cp -al . /tmp/test-runner
+          rm -rf /tmp/test-runner/.nuxt /tmp/test-runner/.output /tmp/test-runner/dist
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist-bundle
-          path: dist
-          retention-days: 1
+          echo "Starting Cloudflare Build and Quality Checks concurrently in isolated directories..."
 
-  deploy:
-    name: Deploy to Cloudflare Pages
-    needs: [check, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+          # メインディレクトリで Cloudflare 向けビルドを実行
+          pnpm build:cf &
+          PID_BUILD=$!
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
+          # 独立した /tmp/test-runner ディレクトリでテスト・型チェック・リントを実行
+          (cd /tmp/test-runner && pnpm check) &
+          PID_CHECK=$!
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: dist-bundle
-          path: dist
+          # 両方の正常終了を待機
+          wait $PID_BUILD && wait $PID_CHECK
 
       - name: Deploy to Cloudflare Pages
         run: pnpm deploy:cf
