@@ -21,7 +21,7 @@ interface BlobItem {
 const activeTab = ref<"db" | "kv" | "blob" | "cache" | "auth">("db");
 
 // --- Auth (Encrypted Cookie) State & Actions ---
-const { loggedIn, user, clear, fetch: fetchSession } = useUserSession();
+const { loggedIn, user, session, clear, fetch: fetchSession } = useUserSession();
 const currentUser = computed(() => user.value as Record<string, any> | null);
 const loginEmail = ref("admin@example.com");
 const loginPassword = ref("password");
@@ -35,7 +35,7 @@ async function handleLogin() {
   isAuthLoading.value = true;
   authError.value = "";
   try {
-    await $fetch("/api/auth/login", {
+    const res = await $fetch<{ success: boolean; user: any }>("/api/auth/login", {
       method: "POST",
       body: {
         email: loginEmail.value,
@@ -43,6 +43,14 @@ async function handleLogin() {
         name: loginName.value,
       },
     });
+    // 即時ステート反映 & フェッチ
+    if (res?.user) {
+      session.value = {
+        id: "session",
+        user: res.user,
+        loggedInAt: res.user.loggedInAt,
+      } as any;
+    }
     await fetchSession();
   } catch (e: any) {
     authError.value = e?.data?.statusMessage || e?.message || "ログインに失敗しました";
@@ -56,6 +64,7 @@ async function handleLogout() {
   try {
     await $fetch("/api/auth/logout", { method: "POST" });
     await clear();
+    session.value = null;
     protectedData.value = null;
   } catch (e) {
     alert("ログアウトに失敗しました");
@@ -273,6 +282,7 @@ async function fetchCacheData() {
 
 // Initial fetch
 onMounted(() => {
+  fetchSession();
   fetchTodos();
   fetchKV();
   fetchBlobs();
