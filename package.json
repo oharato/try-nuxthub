@@ -11,9 +11,8 @@
     "infra:preview": "pnpm --dir infra preview",
     "infra:apply": "pnpm --dir infra apply",
     "infra:destroy": "pnpm --dir infra destroy",
-    "db:migrate:prod": "node --env-file=infra/.env ./node_modules/wrangler/bin/wrangler.js d1 execute nuxthub-cloudflare-infra-prod-d1 --remote --file=server/database/migrations/0000_create_todos_table.sql",
-    "db:migrations": "nuxthub database migrations list",
-    "db:create": "nuxthub database migrations create",
+    "db:migrate:prod": "node --env-file=infra/.env ./node_modules/wrangler/bin/wrangler.js d1 execute nuxthub-cloudflare-infra-prod-d1 --remote --file=server/db/migrations/sqlite/0000_nosy_arachne.sql",
+    "db:generate": "drizzle-kit generate --config .nuxt/hub/db/drizzle.config.ts",
     "postinstall": "nuxt prepare",
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
@@ -25,7 +24,8 @@
     "@nuxthub/core": "^0.10.8",
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.2",
-    "nuxt": "4.3.0"
+    "nuxt": "4.3.0",
+    "unstorage": "^1.17.5"
   },
   "devDependencies": {
     "nuxthub": "^0.9.4",
