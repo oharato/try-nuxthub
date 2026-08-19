@@ -73,7 +73,7 @@ const pagesProject = new cloudflare.PagesProject(
   "pages",
   {
     accountId: accountId,
-    name: prefix,
+    name: "try-nuxthub",
     productionBranch: "main",
   },
   { provider },
@@ -84,4 +84,6 @@ export const d1DatabaseId = database.id;
 export const d1DatabaseName = database.name;
 export const kvNamespaceId = kvNamespace.id;
 export const r2BucketName = r2Bucket.name;
-export const pagesUrl = pagesProject.subdomain.apply((sub: string) => `https://${sub}.pages.dev`);
+export const pagesUrl = pagesProject.subdomain.apply((sub: string) =>
+  sub.startsWith("http") ? sub : `https://${sub.replace(/\.pages\.dev$/, "")}.pages.dev`,
+);
