@@ -1,165 +1,126 @@
-# 🚀 try-nuxthub: Rails-like DX on Nuxt 4, TypeScript & Cloudflare Workers
+# 🚀 try-nuxthub: CraftCommerce on Nuxt 4, TypeScript & Cloudflare Workers
 
-> **Nuxt 4 + NuxtHub v0.10 + TypeScript + Oxlint / Oxfmt で Ruby on Rails のような「設定不要・オールインワン（Batteries-Included）」な開発体験を実現するプロジェクト**
-
-NuxtHub を使うことで、Cloudflare Workers のエッジインフラ（D1, KV, R2）を複雑な設定なしに Nuxt アプリケーションから直接操作できます。また、本番インフラの定義・管理には **Pulumi (TypeScript)** を採用し、コード品質管理には超高速な **Oxlint / Oxfmt** を導入しています。
-
----
-
-## 🎯 Rails との対応表
-
-| 機能 / レイヤー          | Ruby on Rails                     | Nuxt 4 + NuxtHub v0.10 + Cloudflare                       |
-| :----------------------- | :-------------------------------- | :-------------------------------------------------------- |
-| **フレームワーク**       | Rails 8                           | **Nuxt 4**                                                |
-| **データベース (ORM)**   | ActiveRecord + PostgreSQL/MySQL   | **Cloudflare D1 (SQLite) + Drizzle ORM** (`hub:db`)       |
-| **認証 (Session)**       | Devise / Session Cookie           | **暗号化 Cookie (Sealed Session)** (`nuxt-auth-utils`)    |
-| **マイグレーション**     | `db/migrate` / `rails db:migrate` | `server/db/migrations` / `pnpm db:generate`               |
-| **ファイル保存**         | ActiveStorage (S3 / Local)        | **Cloudflare R2** (`hub:blob`)                            |
-| **KVS / キャッシュ**     | `Rails.cache` / Redis             | **Cloudflare KV** (`hub:kv`) / `defineCachedEventHandler` |
-| **Linter / Formatter**   | RuboCop                           | **Oxlint / Oxfmt** (Rust製 超高速ツール)                  |
-| **テストフレームワーク** | RSpec / Minitest                  | **Vitest + @nuxt/test-utils**                             |
-| **管理GUI**              | Rails Admin / Adminer             | **Nuxt DevTools (Hub タブ)** / **NuxtHub Admin**          |
-| **インフラ管理 (IaC)**   | Terraform / Ansible / CDK         | **Pulumi (TypeScript)** (`infra/`)                        |
+> **Nuxt 4 + NuxtHub + TypeScript + Oxlint / Oxfmt で構築された実践的モダンECプラットフォーム「CraftCommerce」**  
+> Cloudflare Workers のエッジインフラ（D1, KV, R2, Cache, SSE）をフル活用し、Ruby on Rails のような「設定不要・オールインワン（Batteries-Included）」な開発体験を実現したリファレンス実装です。
 
 ---
 
-## 📂 プロジェクト構成
+## 🎯 Rails との技術スタック対応表
 
-```text
-├── app/
-│   ├── app.vue                 # ルートコンポーネント
-│   └── pages/
-│       └── index.vue           # 全機能（DB/KV/Blob/Cache/Auth）を試せるダッシュボード
-├── server/
-│   ├── api/
-│   │   ├── auth/               # 暗号化 Cookie 認証 (login, logout, me, protected)
-│   │   ├── todos/              # D1 データベース操作 (CRUD)
-│   │   ├── kv/                 # KV 操作 (Get, Set, Delete via hub:kv)
-│   │   ├── blob/               # R2 ファイル操作 (Upload, Serve, Delete via hub:blob)
-│   │   └── cached-time.ts      # エッジキャッシュ体験
-│   ├── db/
-│   │   ├── schema.sqlite.ts    # NuxtHub v0.10 Drizzle スキーマ定義
-│   │   └── migrations/         # D1 用 マイグレーション SQL
-│   └── utils/
-│       └── drizzle.ts          # 型安全な useDrizzle() ヘルパー
-├── docs/                       # 各種ドキュメント・開発ガイド
-│   ├── TUTORIAL.md             # ハンズオンチュートリアル・開発ガイド
-│   └── AUTH.md                 # 暗号化 Cookie 認証とセッション設計ガイド
-├── tests/                      # テストスイート (Vitest)
-│   ├── unit/                   # 単体テスト
-│   └── integration/            # API 統合テスト
-├── infra/                      # Pulumi による Cloudflare インフラ定義 (IaC)
-├── wrangler.toml               # Cloudflare Pages / Workers バインディング設定
-├── nuxt.config.ts              # Nuxt 4 & NuxtHub v0.10 設定
-└── README.md                   # 本ドキュメント
-```
+| 機能 / レイヤー          | Ruby on Rails (Rails 8)           | Nuxt 4 + NuxtHub + Cloudflare                            |
+| :----------------------- | :-------------------------------- | :------------------------------------------------------- |
+| **フレームワーク**       | Rails 8                           | **Nuxt 4 (Vue 3 + Nitro)**                               |
+| **データベース (ORM)**   | ActiveRecord + SQLite3/PostgreSQL | **Cloudflare D1 (SQLite) + Drizzle ORM** (`hub:db`)      |
+| **認証 (Session)**       | Devise / Session Cookie           | **暗号化 Cookie (Sealed Session)** (`nuxt-auth-utils`)   |
+| **マイグレーション**     | `db/migrate` / `rails db:migrate` | `server/db/migrations` / `pnpm db:generate`              |
+| **ファイル / メディア**  | ActiveStorage (S3 / Local)        | **Cloudflare R2 (Blob Storage)** (`hub:blob`)            |
+| **KVS / 一時カート**     | `Solid Cache` / Redis             | **Cloudflare KV** (`hub:kv`)                             |
+| **カタログキャッシュ**   | `Rails.cache.fetch`               | **Nitro Cache** (`defineCachedEventHandler` / Purge API) |
+| **リアルタイム同期**     | `Solid Cable` + Turbo Streams     | **Server-Sent Events (SSE)** (`createEventStream`)       |
+| **帳票 (PDF) 生成**      | `prawn` gem                       | **`pdf-lib`** (Workers 互換・純粋 JS PDF レンダラ)       |
+| **Linter / Formatter**   | RuboCop                           | **Oxlint / Oxfmt** (Rust製 超高速ツール)                 |
+| **テストフレームワーク** | Minitest / RSpec                  | **Vitest + @nuxt/test-utils**                            |
+| **インフラ管理 (IaC)**   | Kamal 2 (VPS) / Terraform         | **Pulumi (TypeScript)** (`infra/`)                       |
+
+---
+
+## 🛍️ CraftCommerce の主な機能と画面
+
+### 1. 顧客向け機能 (Customer Frontend)
+
+- 🏠 **トップページ (`/`)**: 特集バナー、おすすめ作品、新着コレクション、技術ハイライト、最近チェックした商品カルーセル
+- 📦 **商品カタログ (`/products`)**: カテゴリ絞り込み、キーワード検索、価格/新着ソート、エッジキャッシュ（60秒）
+- 🔍 **商品詳細 (`/products/:slug`)**: 複数画像ギャラリー、**リアルタイム在庫同期 (SSE)**、星評価レビュー一覧 & 投稿フォーム
+- 🛒 **ショッピングカート (`/cart`)**: **Cloudflare KV** による高速カート管理（数量変更、削除、小計計算）
+- 💳 **チェックアウト (`/checkout`)**: 配送先入力、モック決済シミュレーション、安全な在庫引き当て
+- 🎉 **注文完了 (`/orders/:id/complete`)**: 注文番号表示、**領収書PDFダウンロード** (`pdf-lib` + R2)
+- 👤 **注文履歴 (`/mypage/orders`)**: 過去の注文明細と領収書PDF再ダウンロード
+- 🔐 **認証 (`/login`, `/signup`)**: 暗号化Cookieセッション、**ゲストカートから会員カートへの自動マージ**
+
+### 2. 管理者向け機能 (Admin Backoffice)
+
+- 📊 **売上ダッシュボード (`/admin`)**: 売上総額・注文件数・在庫僅少アラート、**リアルタイム注文速報トースト (SSE)**
+- 🏷️ **商品管理 (`/admin/products`)**: 商品一覧、在庫の即時増減 (+/-) とリアルタイムブロードキャスト連動、公開トグル
+- ➕ **商品新規登録 (`/admin/products/new`)**: **Cloudflare R2** への複数画像ドラッグ＆ドロップアップロード、カテゴリ選択
+- 📑 **注文管理 (`/admin/orders`)**: 全注文一覧、発送ステータス更新 (`PAID` → `SHIPPED`)、領収書PDF確認
+- ⚙️ **ジョブ監視 (`/admin/jobs`)**: `JobLog` 履歴閲覧、日次売上集計バッチの手動トリガー実行
+- ⚡ **キャッシュ管理 (`/admin/cache`)**: カタログキャッシュステータス確認、ワンクリック Purge
+
+---
+
+## 🔑 検証用シードアカウント
+
+開発サーバー起動時に自動でシードデータ（5カテゴリ・8商品・サンプル画像・レビュー）が登録されます。
+
+| アカウント種別          | メールアドレス      | パスワード    | 権限・用途                             |
+| :---------------------- | :------------------ | :------------ | :------------------------------------- |
+| **管理者 (Admin)**      | `admin@example.com` | `password123` | 管理画面 (`/admin/*`) へのフルアクセス |
+| **一般会員 (Customer)** | `user@example.com`  | `password123` | 商品購入、注文履歴、レビュー投稿       |
 
 ---
 
 ## ⚡ クイックスタート
 
-### 1. 依存パッケージのインストール
+### 1. インストール & 開発サーバー起動
 
 ```bash
 pnpm install
-```
-
-### 2. 開発サーバーの起動
-
-```bash
 pnpm dev
 ```
 
-- **ローカルからアクセス**: [http://localhost:3000](http://localhost:3000)
-- **同一LAN内からアクセス**: [http://nuc7.local:3000](http://nuc7.local:3000)
+ブラウザで [http://localhost:3000](http://localhost:3000) を開くと、CraftCommerce のトップページが表示されます。
 
-D1、KV、R2、Cache の全機能をテストできるダッシュボードが表示されます。
+### 2. Nuxt DevTools (Hub UI)
 
-### 3. Nuxt DevTools（NuxtHub GUI）の利用
-
-ブラウザでアプリを開いた状態で、画面下部の **Nuxt ロゴ** をクリックするか `Shift + Alt + D` を押すと、**Nuxt DevTools** が開きます。
-DevTools 内の **「Hub」** タブから、ローカルの D1 データベース、KV、Blob を直接ブラウザから閲覧・クエリ実行・編集できます。
+ブラウザで `Shift + Alt + D` を押すと **Nuxt DevTools** が開きます。  
+**「Hub」** タブから、ローカルの D1 データベース、KV ストア、Blob ストレージを直接閲覧・編集できます。
 
 ---
 
-## 🚀 デプロイとインフラ構築の流れ
-
-### ① Pulumi による Cloudflare インフラ作成 (IaC)
-
-```bash
-# 1. 認証情報の設定 (.env)
-cp infra/.env.example infra/.env
-# infra/.env に CLOUDFLARE_ACCOUNT_ID と CLOUDFLARE_API_TOKEN を記入
-# (※ API Token には D1 / KV / R2 / Pages の Edit 権限が必要です)
-
-# 2. インフラのデプロイ
-pnpm infra:preview   # 変更内容の事前確認
-pnpm infra:apply     # インフラの作成・適用
-```
-
-### ② 本番 D1 データベースへのマイグレーション適用
-
-初回デプロイ時（またはスキーマ変更時）に、本番 D1 にテーブルを作成します：
-
-```bash
-pnpm db:migrate:prod
-```
-
-### ③ バインディング設定 & デプロイ
-
-Pulumi 実行結果で出力された ID を `wrangler.toml` に設定し、デプロイコマンドを実行します。
-
-```bash
-pnpm deploy:cf
-```
-
----
-
-## 🛠️ コマンド一覧 (npm scripts)
+## 🛠️ コマンド一覧
 
 ### 💻 開発・ビルド
 
-| コマンド           | 説明                                                                                     |
-| :----------------- | :--------------------------------------------------------------------------------------- |
-| `pnpm dev`         | ローカル開発サーバー起動（D1/KV/R2 自動エミュレート、`0.0.0.0` リッスンで LAN 公開対応） |
-| `pnpm build`       | 本番用ビルド（Node / 汎用サーバー用 `.output` ディレクトリ生成）                         |
-| `pnpm generate`    | 静的サイト生成（SSG）                                                                    |
-| `pnpm preview`     | ローカルの Cloudflare Pages エミュレータで `dist/` 出力をプレビュー                      |
-| `pnpm postinstall` | `pnpm install` 実行後に自動で `.nuxt` の型定義を生成 (`nuxt prepare`)                    |
+```bash
+pnpm dev             # ローカル開発サーバー起動 (D1/KV/R2 自動エミュレート)
+pnpm build           # 本番用ビルド (.output 生成)
+pnpm generate        # 静的サイト生成 (SSG)
+pnpm preview         # Cloudflare Pages エミュレータでプレビュー
+```
 
 ### 🧹 コード品質・テスト
 
-| コマンド          | 説明                                                                      |
-| :---------------- | :------------------------------------------------------------------------ |
-| `pnpm lint`       | **Oxlint** による超高速静的解析                                           |
-| `pnpm lint:fix`   | **Oxlint** による静的解析と自動修正                                       |
-| `pnpm format`     | **Oxfmt** によるコードベース全体の高速自動整形                            |
-| `pnpm typecheck`  | **vue-tsc** による TypeScript / Vue SFC の型チェック                      |
-| `pnpm test`       | **Vitest + @nuxt/test-utils** による単体テストおよび統合 API テストの実行 |
-| `pnpm test:watch` | **Vitest** によるテスト監視モード（ファイル保存時に自動再テスト）         |
-| `pnpm check`      | **一括検証**: フォーマット・Lint・型チェック・テスト・ビルドを一括実行    |
-| `pnpm check:fix`  | **一括修正 & 検証**: 自動整形・自動Lint修正・型チェック・テスト・ビルド   |
+```bash
+pnpm lint            # Oxlint による超高速静的解析
+pnpm lint:fix        # Oxlint による静的解析と自動修正
+pnpm format          # Oxfmt によるコード全体の高速自動整形
+pnpm typecheck       # vue-tsc による TypeScript 型チェック
+pnpm test            # Vitest + @nuxt/test-utils による単体・統合テスト実行
+pnpm check           # 一括検証: format + lint + typecheck + test + build
+pnpm check:fix       # 一括修正 & 検証
+```
 
 ### 🗄️ データベース (D1 / Drizzle)
 
-| コマンド               | 説明                                                                                        |
-| :--------------------- | :------------------------------------------------------------------------------------------ |
-| `pnpm db:generate`     | スキーマ定義 (`server/db/schema.sqlite.ts`) の変更を検知し、マイグレーション SQL を自動生成 |
-| `pnpm db:migrate:prod` | 本番 Cloudflare D1 データベースにマイグレーション SQL を適用                                |
+```bash
+pnpm db:generate     # スキーマ変更からマイグレーション SQL を自動生成
+pnpm db:migrate:prod # 本番 Cloudflare D1 データベースへマイグレーション適用
+```
 
 ### ☁️ インフラ (Pulumi) & デプロイ
 
-| コマンド             | 説明                                                                                                   |
-| :------------------- | :----------------------------------------------------------------------------------------------------- |
-| `pnpm infra:preview` | **Pulumi** による Cloudflare リソース（D1 / KV / R2 / Pages）の変更事前確認 (dry-run)                  |
-| `pnpm infra:apply`   | **Pulumi** による Cloudflare リソースの作成・更新                                                      |
-| `pnpm infra:destroy` | **Pulumi** で作成した Cloudflare リソースの破棄                                                        |
-| `pnpm deploy:cf`     | `NITRO_PRESET=cloudflare_pages` で `dist/` にビルドし、Wrangler 経由で Cloudflare Pages へ直接デプロイ |
+```bash
+pnpm infra:preview   # Pulumi による Cloudflare リソース事前確認
+pnpm infra:apply     # Cloudflare リソースの作成・更新
+pnpm deploy:cf       # Cloudflare Pages への本番デプロイ
+```
 
 ---
 
-## 📖 ドキュメント・開発ガイド
+## 📖 関連ドキュメント
 
-- 📘 **[チュートリアル & 開発ガイド (docs/TUTORIAL.md)](./docs/TUTORIAL.md)**: ステップごとのコードの書き方、マイグレーション管理、Pulumi の詳しい設定方法
-- 🔐 **[暗号化 Cookie 認証ガイド (docs/AUTH.md)](./docs/AUTH.md)**: エッジ環境におけるセッション設計、Redis / JWT との比較、セキュリティ仕様
-- ⚡ **[CI/CD & デプロイ高速化ガイド (docs/ci-optimization.md)](./docs/ci-optimization.md)**: GitHub Actions、Vitest、Nuxt ビルド、Cloudflare Pages デプロイの高速化手法とベンチマーク結果
+- 📋 **[CraftCommerce 要件・設計仕様書 (docs/craft_commerce_specification.md)](./docs/craft_commerce_specification.md)**
+- 📝 **[実装振り返り & 技術検証レポート (docs/IMPLEMENTATION_REPORT.md)](./docs/IMPLEMENTATION_REPORT.md)**
+- 📘 **[チュートリアル & 開発ガイド (docs/TUTORIAL.md)](./docs/TUTORIAL.md)**
+- 🔐 **[暗号化 Cookie 認証ガイド (docs/AUTH.md)](./docs/AUTH.md)**
+- ⚡ **[CI/CD & デプロイ高速化ガイド (docs/ci-optimization.md)](./docs/ci-optimization.md)**

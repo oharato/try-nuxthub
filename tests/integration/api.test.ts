@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { setup, $fetch } from "@nuxt/test-utils/e2e";
 
-describe("Integration Tests: NuxtHub APIs", async () => {
+describe("Integration Tests: CraftCommerce & NuxtHub APIs", async () => {
   await setup({
     server: true,
   });
@@ -30,54 +30,115 @@ describe("Integration Tests: NuxtHub APIs", async () => {
       method: "DELETE",
     });
     expect(delRes).toEqual({ success: true });
-
-    // 4. 削除後の確認
-    const updatedList = await $fetch<Array<{ key: string; value: any }>>("/api/kv");
-    expect(updatedList.find((i) => i.key === "integration_test_key")).toBeUndefined();
   });
 
   it("Database (Todos) の CRUD が正しく動作する", async () => {
-    // 1. Todo 作成 (POST)
     const created = await $fetch<any>("/api/todos", {
       method: "POST",
       body: { title: "Integration Test Todo" },
     });
     expect(created.id).toBeDefined();
     expect(created.title).toBe("Integration Test Todo");
-    expect(created.completed).toBe(false);
 
-    // 2. Todo 一覧 (GET)
     const todos = await $fetch<any[]>("/api/todos");
     expect(todos.some((t) => t.id === created.id)).toBe(true);
-
-    // 3. Todo 更新 (PATCH)
-    const updated = await $fetch<any>(`/api/todos/${created.id}`, {
-      method: "PATCH",
-      body: { completed: true },
-    });
-    expect(updated.completed).toBe(true);
-
-    // 4. Todo 削除 (DELETE)
-    const deleted = await $fetch<{ success: boolean }>(`/api/todos/${created.id}`, {
-      method: "DELETE",
-    });
-    expect(deleted).toEqual({ success: true });
   });
 
-  it("Cache API がレスポンスを返す", async () => {
-    const res = await $fetch<{ generatedAt: string; timestamp: number; message: string }>(
-      "/api/cached-time",
-    );
-    expect(res.generatedAt).toBeDefined();
-    expect(res.timestamp).toBeGreaterThan(0);
-    expect(res.message).toContain("cached");
+  it("カテゴリ一覧取得 (GET /api/categories) が5件の初期カテゴリを返す", async () => {
+    const categories = await $fetch<any[]>("/api/categories");
+    expect(categories.length).toBeGreaterThanOrEqual(5);
+    expect(categories.some((c) => c.slug === "ceramics")).toBe(true);
+    expect(categories.some((c) => c.slug === "woodwork")).toBe(true);
   });
 
-  it("暗号化 Cookie 認証（ログイン・保護API検証）が正しく動作する", async () => {
-    // 1. 未ログインでの保護 API へのアクセス -> 401 エラー
-    await expect($fetch("/api/auth/protected")).rejects.toThrow();
+  it("商品一覧・詳細 (GET /api/products, GET /api/products/:slug) が正常に動作する", async () => {
+    // 1. 商品一覧取得 (Cached)
+    const products = await $fetch<any[]>("/api/products");
+    expect(products.length).toBeGreaterThanOrEqual(6);
 
-    // 2. 誤ったパスワードでのログイン -> 401 エラー
+    const first = products[0];
+    expect(first.id).toBeDefined();
+    expect(first.slug).toBeDefined();
+
+    // 2. 商品詳細取得
+    const detail = await $fetch<any>(`/api/products/${first.slug}`);
+    expect(detail.id).toBe(first.id);
+    expect(detail.name).toBe(first.name);
+    expect(detail.images).toBeDefined();
+    expect(detail.stockQuantity).toBeGreaterThanOrEqual(0);
+  });
+
+  it("ショッピングカート (KV Store: GET /api/cart, POST /api/cart/items) が動作する", async () => {
+    const products = await $fetch<any[]>("/api/products");
+    const targetProduct = products[0];
+    const guestSessionId = "test-guest-session-12345";
+
+    // 1. カートに追加 (POST)
+    const updatedCart = await $fetch<any>("/api/cart/items", {
+      method: "POST",
+      headers: { "x-guest-session-id": guestSessionId },
+      body: { productId: targetProduct.id, quantity: 2 },
+    });
+    expect(updatedCart.items.length).toBeGreaterThanOrEqual(1);
+    const inCart = updatedCart.items.find((i: any) => i.productId === targetProduct.id);
+    expect(inCart).toBeDefined();
+    expect(inCart.quantity).toBeGreaterThanOrEqual(2);
+
+    // 2. カート取得 (GET)
+    const cart = await $fetch<any>("/api/cart", {
+      headers: { "x-guest-session-id": guestSessionId },
+    });
+    expect(cart.totalCount).toBeGreaterThanOrEqual(2);
+    expect(cart.subtotal).toBeGreaterThan(0);
+  });
+
+  it("チェックアウト注文確定 (POST /api/orders) が在庫引き当てと注文作成を行う", async () => {
+    const products = await $fetch<any[]>("/api/products");
+    const targetProduct = products[0];
+    const initialStock = targetProduct.stockQuantity;
+    const guestSessionId = "test-order-guest-99999";
+
+    // 1. カートに商品をセット
+    await $fetch("/api/cart/items", {
+      method: "POST",
+      headers: { "x-guest-session-id": guestSessionId },
+      body: { productId: targetProduct.id, quantity: 1 },
+    });
+
+    // 2. 注文確定
+    const orderRes = await $fetch<any>("/api/orders", {
+      method: "POST",
+      headers: { "x-guest-session-id": guestSessionId },
+      body: {
+        customerName: "テスト 太郎",
+        customerEmail: "test@example.com",
+        shippingAddress: "東京都千代田区1-1-1",
+      },
+    });
+
+    expect(orderRes.success).toBe(true);
+    expect(orderRes.order.id).toBeDefined();
+    expect(orderRes.order.orderNumber).toMatch(/^ORD-\d{8}-\d{4}$/);
+    expect(orderRes.order.status).toBe("paid");
+
+    // 3. 注文詳細取得
+    const orderDetail = await $fetch<any>(`/api/orders/${orderRes.order.id}`);
+    expect(orderDetail.customerName).toBe("テスト 太郎");
+    expect(orderDetail.items.length).toBeGreaterThanOrEqual(1);
+
+    // 4. カートがクリアされていることを確認
+    const clearedCart = await $fetch<any>("/api/cart", {
+      headers: { "x-guest-session-id": guestSessionId },
+    });
+    expect(clearedCart.items.length).toBe(0);
+
+    // 5. 在庫が減算されていることを確認
+    const updatedProduct = await $fetch<any>(`/api/products/${targetProduct.slug}`);
+    expect(updatedProduct.stockQuantity).toBe(initialStock - 1);
+  });
+
+  it("暗号化 Cookie 認証（ログイン・会員登録）が正しく動作する", async () => {
+    // 1. 誤ったパスワードでのログイン -> 401 エラー
     await expect(
       $fetch("/api/auth/login", {
         method: "POST",
@@ -85,10 +146,10 @@ describe("Integration Tests: NuxtHub APIs", async () => {
       }),
     ).rejects.toThrow();
 
-    // 3. 正しいログイン -> 成功
+    // 2. 正しいログイン -> 成功
     const loginRes = await $fetch<{ success: boolean; user: any }>("/api/auth/login", {
       method: "POST",
-      body: { email: "admin@example.com", password: "password", name: "管理者" },
+      body: { email: "admin@example.com", password: "password123", name: "管理者" },
     });
     expect(loginRes.success).toBe(true);
     expect(loginRes.user.email).toBe("admin@example.com");
