@@ -1,7 +1,6 @@
 import { blob } from "hub:blob";
 import { useDrizzle, tables } from "./drizzle";
 
-// SVG helper for placeholder product images
 function createProductSvg(title: string, category: string, color: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
     <defs>
@@ -19,43 +18,62 @@ function createProductSvg(title: string, category: string, color: string): strin
   </svg>`;
 }
 
-export async function ensureSeedData() {
+let seedPromise: Promise<void> | null = null;
+
+export function ensureSeedData(): Promise<void> {
+  if (!seedPromise) {
+    seedPromise = doEnsureSeedData().catch((err) => {
+      seedPromise = null;
+      throw err;
+    });
+  }
+  return seedPromise;
+}
+
+async function doEnsureSeedData() {
   const db = useDrizzle();
 
-  // 1. Check if seed data exists
-  const existingUsers = await db.select().from(tables.users);
-  if (existingUsers.length > 0) {
+  // 1. Check if products already seeded
+  const existingProducts = await db.select().from(tables.products);
+  if (existingProducts.length >= 8) {
     return;
   }
 
   console.log("🌱 Seeding CraftCommerce initial data...");
 
-  // 2. Seed Users
+  // 2. Seed Users if missing
   const passwordHash = await hashPassword("password123");
+  const existingUsers = await db.select().from(tables.users);
 
-  const [_adminUser] = await db
-    .insert(tables.users)
-    .values({
-      email: "admin@example.com",
-      passwordDigest: passwordHash,
-      name: "管理者",
-      role: "admin",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .returning();
+  let adminUser = existingUsers.find((u) => u.email === "admin@example.com");
+  if (!adminUser) {
+    [adminUser] = await db
+      .insert(tables.users)
+      .values({
+        email: "admin@example.com",
+        passwordDigest: passwordHash,
+        name: "管理者",
+        role: "admin",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+  }
 
-  const [customerUser] = await db
-    .insert(tables.users)
-    .values({
-      email: "user@example.com",
-      passwordDigest: passwordHash,
-      name: "一般 太郎",
-      role: "customer",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .returning();
+  let customerUser = existingUsers.find((u) => u.email === "user@example.com");
+  if (!customerUser) {
+    [customerUser] = await db
+      .insert(tables.users)
+      .values({
+        email: "user@example.com",
+        passwordDigest: passwordHash,
+        name: "一般 太郎",
+        role: "customer",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+  }
 
   // 3. Seed Categories
   const categoryData = [
@@ -88,9 +106,17 @@ export async function ensureSeedData() {
 
   const insertedCategories: Record<string, number> = {};
   for (const cat of categoryData) {
-    const [inserted] = await db.insert(tables.categories).values(cat).returning();
-    if (inserted) {
-      insertedCategories[cat.slug] = inserted.id;
+    const existing = await db
+      .select()
+      .from(tables.categories)
+      .where(eq(tables.categories.slug, cat.slug));
+    if (existing.length > 0 && existing[0]) {
+      insertedCategories[cat.slug] = existing[0].id;
+    } else {
+      const [inserted] = await db.insert(tables.categories).values(cat).returning();
+      if (inserted) {
+        insertedCategories[cat.slug] = inserted.id;
+      }
     }
   }
 
@@ -187,6 +213,12 @@ export async function ensureSeedData() {
   ];
 
   for (const item of productData) {
+    const existing = await db
+      .select()
+      .from(tables.products)
+      .where(eq(tables.products.slug, item.slug));
+    if (existing.length > 0) continue;
+
     const categoryId = insertedCategories[item.categorySlug] || 1;
     const [product] = await db
       .insert(tables.products)
@@ -217,8 +249,8 @@ export async function ensureSeedData() {
             contentType: "image/svg+xml",
             addRandomSuffix: false,
           });
-        } catch (err) {
-          console.warn(`Failed to put blob for ${blobKey}`, err);
+        } catch {
+          // ignore
         }
 
         await db.insert(tables.productImages).values({
