@@ -1,12 +1,12 @@
-CREATE TABLE `categories` (
+CREATE TABLE IF NOT EXISTS `categories` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`slug` text NOT NULL,
 	`description` text
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `categories_slug_unique` ON `categories` (`slug`);--> statement-breakpoint
-CREATE TABLE `job_logs` (
+CREATE UNIQUE INDEX IF NOT EXISTS `categories_slug_unique` ON `categories` (`slug`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `job_logs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`job_type` text NOT NULL,
 	`status` text NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE `job_logs` (
 	`finished_at` integer
 );
 --> statement-breakpoint
-CREATE TABLE `order_items` (
+CREATE TABLE IF NOT EXISTS `order_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`order_id` integer NOT NULL,
 	`product_id` integer NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE `order_items` (
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE TABLE `orders` (
+CREATE TABLE IF NOT EXISTS `orders` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`user_id` integer,
 	`guest_session_id` text,
@@ -41,8 +41,8 @@ CREATE TABLE `orders` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `orders_order_number_unique` ON `orders` (`order_number`);--> statement-breakpoint
-CREATE TABLE `product_images` (
+CREATE UNIQUE INDEX IF NOT EXISTS `orders_order_number_unique` ON `orders` (`order_number`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `product_images` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`product_id` integer NOT NULL,
 	`blob_key` text NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE `product_images` (
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `products` (
+CREATE TABLE IF NOT EXISTS `products` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`category_id` integer NOT NULL,
 	`name` text NOT NULL,
@@ -66,8 +66,8 @@ CREATE TABLE `products` (
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `products_slug_unique` ON `products` (`slug`);--> statement-breakpoint
-CREATE TABLE `reviews` (
+CREATE UNIQUE INDEX IF NOT EXISTS `products_slug_unique` ON `products` (`slug`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `reviews` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`user_id` integer NOT NULL,
 	`product_id` integer NOT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE `reviews` (
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`email` text NOT NULL,
 	`password_digest` text NOT NULL,
@@ -88,4 +88,4 @@ CREATE TABLE `users` (
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);
+CREATE UNIQUE INDEX IF NOT EXISTS `users_email_unique` ON `users` (`email`);

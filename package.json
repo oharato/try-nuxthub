@@ -12,7 +12,7 @@
     "infra:preview": "pnpm --dir infra preview",
     "infra:apply": "pnpm --dir infra apply",
     "infra:destroy": "pnpm --dir infra destroy",
-    "db:migrate:prod": "node --env-file=infra/.env ./node_modules/wrangler/bin/wrangler.js d1 execute nuxthub-cloudflare-infra-prod-d1 --remote --file=server/db/migrations/sqlite/0000_nosy_arachne.sql",
+    "db:migrate:prod": "wrangler d1 migrations apply nuxthub-cloudflare-infra-prod-d1 --remote",
     "db:generate": "drizzle-kit generate --config .nuxt/hub/db/drizzle.config.ts",
     "postinstall": "nuxt prepare",
     "lint": "oxlint .",

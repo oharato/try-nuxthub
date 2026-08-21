@@ -1,4 +1,4 @@
-CREATE TABLE `todos` (
+CREATE TABLE IF NOT EXISTS `todos` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`title` text NOT NULL,
 	`completed` integer DEFAULT false NOT NULL,

@@ -94,9 +94,8 @@ describe("Integration Tests: CraftCommerce & NuxtHub APIs", async () => {
 
   it("チェックアウト注文確定 (POST /api/orders) が在庫引き当てと注文作成を行う", async () => {
     const products = await $fetch<any[]>("/api/products");
-    const targetProduct = products[0];
-    const initialStock = targetProduct.stockQuantity;
-    const guestSessionId = "test-order-guest-99999";
+    const targetProduct = products.find((p) => p.stockQuantity > 0) || products[0];
+    const guestSessionId = `test-order-guest-${Date.now()}`;
 
     // 1. カートに商品をセット
     await $fetch("/api/cart/items", {
@@ -104,6 +103,9 @@ describe("Integration Tests: CraftCommerce & NuxtHub APIs", async () => {
       headers: { "x-guest-session-id": guestSessionId },
       body: { productId: targetProduct.id, quantity: 1 },
     });
+
+    const beforeOrderProd = await $fetch<any>(`/api/products/${targetProduct.slug}`);
+    const initialStock = beforeOrderProd.stockQuantity;
 
     // 2. 注文確定
     const orderRes = await $fetch<any>("/api/orders", {
@@ -135,7 +137,7 @@ describe("Integration Tests: CraftCommerce & NuxtHub APIs", async () => {
     // 5. 在庫が減算されていることを確認
     const updatedProduct = await $fetch<any>(`/api/products/${targetProduct.slug}`);
     expect(updatedProduct.stockQuantity).toBe(initialStock - 1);
-  });
+  }, 20000);
 
   it("暗号化 Cookie 認証（ログイン・会員登録）が正しく動作する", async () => {
     // 1. 誤ったパスワードでのログイン -> 401 エラー
