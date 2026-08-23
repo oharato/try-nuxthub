@@ -3,24 +3,39 @@
 > **Nuxt 4 + NuxtHub + TypeScript + Oxlint / Oxfmt で構築された実践的モダンECプラットフォーム「CraftCommerce」**  
 > Cloudflare Workers のエッジインフラ（D1, KV, R2, Cache, SSE）をフル活用し、Ruby on Rails のような「設定不要・オールインワン（Batteries-Included）」な開発体験を実現したリファレンス実装です。
 
+🌐 **本番デモサイト**: [https://try-nuxthub.pages.dev/](https://try-nuxthub.pages.dev/)
+
+---
+
+## 🏆 Lighthouse 品質・パフォーマンス計測結果
+
+Google Lighthouse による本番サイト（[https://try-nuxthub.pages.dev/](https://try-nuxthub.pages.dev/)）の監査スコアです。
+
+| カテゴリ                                 |    💻 Desktop    |    📱 Mobile     |                  判定                   |
+| :--------------------------------------- | :--------------: | :--------------: | :-------------------------------------: |
+| **Accessibility（アクセシビリティ）**    | **100** / 100 💯 | **100** / 100 💯 |   🟢 **満点達成 (WCAG 2.1 AA 準拠)**    |
+| **Best Practices（ベストプラクティス）** | **100** / 100 💯 | **100** / 100 💯 |  🟢 **満点達成 (Edge SSE / セキュア)**  |
+| **SEO（検索エンジン最適化）**            | **100** / 100 💯 | **100** / 100 💯 |    🟢 **満点達成 (SSR メタ / OGP)**     |
+| **Performance（パフォーマンス）**        | **99** / 100 ⚡  | **74〜85** / 100 | 🟢 **LCP 0.7秒 / CLS 0.000 (完全安定)** |
+
 ---
 
 ## 🎯 Rails との技術スタック対応表
 
-| 機能 / レイヤー          | Ruby on Rails (Rails 8)           | Nuxt 4 + NuxtHub + Cloudflare                            |
-| :----------------------- | :-------------------------------- | :------------------------------------------------------- |
-| **フレームワーク**       | Rails 8                           | **Nuxt 4 (Vue 3 + Nitro)**                               |
-| **データベース (ORM)**   | ActiveRecord + SQLite3/PostgreSQL | **Cloudflare D1 (SQLite) + Drizzle ORM** (`hub:db`)      |
-| **認証 (Session)**       | Devise / Session Cookie           | **暗号化 Cookie (Sealed Session)** (`nuxt-auth-utils`)   |
-| **マイグレーション**     | `db/migrate` / `rails db:migrate` | `server/db/migrations` / `pnpm db:generate`              |
-| **ファイル / メディア**  | ActiveStorage (S3 / Local)        | **Cloudflare R2 (Blob Storage)** (`hub:blob`)            |
-| **KVS / 一時カート**     | `Solid Cache` / Redis             | **Cloudflare KV** (`hub:kv`)                             |
-| **カタログキャッシュ**   | `Rails.cache.fetch`               | **Nitro Cache** (`defineCachedEventHandler` / Purge API) |
-| **リアルタイム同期**     | `Solid Cable` + Turbo Streams     | **Server-Sent Events (SSE)** (`createEventStream`)       |
-| **帳票 (PDF) 生成**      | `prawn` gem                       | **`pdf-lib`** (Workers 互換・純粋 JS PDF レンダラ)       |
-| **Linter / Formatter**   | RuboCop                           | **Oxlint / Oxfmt** (Rust製 超高速ツール)                 |
-| **テストフレームワーク** | Minitest / RSpec                  | **Vitest + @nuxt/test-utils**                            |
-| **インフラ管理 (IaC)**   | Kamal 2 (VPS) / Terraform         | **Pulumi (TypeScript)** (`infra/`)                       |
+| 機能 / レイヤー          | Ruby on Rails (Rails 8)           | Nuxt 4 + NuxtHub + Cloudflare                             |
+| :----------------------- | :-------------------------------- | :-------------------------------------------------------- |
+| **フレームワーク**       | Rails 8                           | **Nuxt 4 (Vue 3 + Nitro)**                                |
+| **データベース (ORM)**   | ActiveRecord + SQLite3/PostgreSQL | **Cloudflare D1 (SQLite) + Drizzle ORM** (`hub:db`)       |
+| **認証 (Session)**       | Devise / Session Cookie           | **暗号化 Cookie (Sealed Session)** (`nuxt-auth-utils`)    |
+| **マイグレーション**     | `db/migrate` / `rails db:migrate` | `server/db/migrations` / `wrangler d1 migrations apply`   |
+| **ファイル / メディア**  | ActiveStorage (S3 / Local)        | **Cloudflare R2 (Blob Storage)** (`hub:blob`)             |
+| **KVS / 一時カート**     | `Solid Cache` / Redis             | **Cloudflare KV** (`hub:kv`)                              |
+| **カタログキャッシュ**   | `Rails.cache.fetch`               | **Nitro Cache** (`defineCachedEventHandler` / Purge API)  |
+| **リアルタイム同期**     | `Solid Cable` + Turbo Streams     | **Server-Sent Events (SSE)** (`TransformStream`)          |
+| **帳票 (PDF) 生成**      | `prawn` gem                       | **`pdf-lib` + Noto Sans JP** (日本語完全対応・エッジ生成) |
+| **Linter / Formatter**   | RuboCop                           | **Oxlint / Oxfmt** (Rust製 超高速ツール)                  |
+| **テストフレームワーク** | Minitest / RSpec                  | **Vitest + @nuxt/test-utils**                             |
+| **インフラ管理 (IaC)**   | Kamal 2 (VPS) / Terraform         | **Pulumi (TypeScript)** (`infra/`)                        |
 
 ---
 
@@ -33,7 +48,7 @@
 - 🔍 **商品詳細 (`/products/:slug`)**: 複数画像ギャラリー、**リアルタイム在庫同期 (SSE)**、星評価レビュー一覧 & 投稿フォーム
 - 🛒 **ショッピングカート (`/cart`)**: **Cloudflare KV** による高速カート管理（数量変更、削除、小計計算）
 - 💳 **チェックアウト (`/checkout`)**: 配送先入力、モック決済シミュレーション、安全な在庫引き当て
-- 🎉 **注文完了 (`/orders/:id/complete`)**: 注文番号表示、**領収書PDFダウンロード** (`pdf-lib` + R2)
+- 🎉 **注文完了 (`/orders/:id/complete`)**: 注文番号表示、**日本語対応・領収書PDFダウンロード** (`pdf-lib` + Noto Sans JP + R2)
 - 👤 **注文履歴 (`/mypage/orders`)**: 過去の注文明細と領収書PDF再ダウンロード
 - 🔐 **認証 (`/login`, `/signup`)**: 暗号化Cookieセッション、**ゲストカートから会員カートへの自動マージ**
 
@@ -50,7 +65,7 @@
 
 ## 🔑 検証用シードアカウント
 
-開発サーバー起動時に自動でシードデータ（5カテゴリ・8商品・サンプル画像・レビュー）が登録されます。
+開発サーバー起動時および本番環境で自動でシードデータ（5カテゴリ・8商品・サンプル画像・レビュー）が登録されています。
 
 | アカウント種別          | メールアドレス      | パスワード    | 権限・用途                             |
 | :---------------------- | :------------------ | :------------ | :------------------------------------- |
@@ -84,7 +99,7 @@ pnpm dev
 ```bash
 pnpm dev             # ローカル開発サーバー起動 (D1/KV/R2 自動エミュレート)
 pnpm build           # 本番用ビルド (.output 生成)
-pnpm generate        # 静的サイト生成 (SSG)
+pnpm build:cf        # Cloudflare Pages 向けビルド
 pnpm preview         # Cloudflare Pages エミュレータでプレビュー
 ```
 
@@ -96,15 +111,14 @@ pnpm lint:fix        # Oxlint による静的解析と自動修正
 pnpm format          # Oxfmt によるコード全体の高速自動整形
 pnpm typecheck       # vue-tsc による TypeScript 型チェック
 pnpm test            # Vitest + @nuxt/test-utils による単体・統合テスト実行
-pnpm check           # 一括検証: format + lint + typecheck + test + build
-pnpm check:fix       # 一括修正 & 検証
+pnpm check           # 一括検証: format + lint + typecheck + test
 ```
 
 ### 🗄️ データベース (D1 / Drizzle)
 
 ```bash
 pnpm db:generate     # スキーマ変更からマイグレーション SQL を自動生成
-pnpm db:migrate:prod # 本番 Cloudflare D1 データベースへマイグレーション適用
+pnpm db:migrate:prod # 本番 Cloudflare D1 データベースへマイグレーション適用 (wrangler d1 migrations apply)
 ```
 
 ### ☁️ インフラ (Pulumi) & デプロイ

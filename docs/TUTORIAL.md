@@ -1,6 +1,6 @@
 # 📘 NuxtHub × Cloudflare チュートリアル & 開発ガイド
 
-このチュートリアルでは、**Nuxt 4 + NuxtHub v0.10 + TypeScript × Cloudflare Workers** 環境で Ruby on Rails のような「設定不要・オールインワン・型安全」な開発体験を実践し、**Pulumi (TypeScript)** を使ったインフラ構築とデプロイまでの全工程を解説します。
+このチュートリアルでは、**Nuxt 4 + NuxtHub + TypeScript × Cloudflare Workers** 環境で Ruby on Rails のような「設定不要・オールインワン・型安全」な開発体験を実践し、**Pulumi (TypeScript)** を使ったインフラ構築とデプロイまでの全工程を解説します。
 
 ---
 
@@ -12,8 +12,10 @@
 4. [KV (Key-Value Store) を使う](#4-kv-key-value-store-を使う)
 5. [Blob (R2 オブジェクトストレージ) を使う](#5-blob-r2-オブジェクトストレージ-を使う)
 6. [エッジキャッシュ (Cached Handler) を使う](#6-エッジキャッシュ-cached-handler-を使う)
-7. [Nuxt DevTools (NuxtHub GUI) の活用](#7-nuxt-devtools-nuxthub-gui-の活用)
-8. [Pulumi によるインフラ構築と本番デプロイ](#8-pulumi-によるインフラ構築と本番デプロイ)
+7. [リアルタイム Server-Sent Events (SSE) を使う](#7-リアルタイム-server-sent-events-sse-を使う)
+8. [日本語 PDF 領収書生成 (pdf-lib) を使う](#8-日本語-pdf-領収書生成-pdf-lib-を使う)
+9. [Nuxt DevTools (NuxtHub GUI) の活用](#9-nuxt-devtools-nuxthub-gui-の活用)
+10. [Pulumi によるインフラ構築と本番デプロイ](#10-pulumi-によるインフラ構築と本番デプロイ)
 
 ---
 
@@ -24,7 +26,7 @@ NuxtHub の各機能は `nuxt.config.ts` で有効化するだけで、Cloudflar
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ["@nuxthub/core"],
+  modules: ["@nuxthub/core", "nuxt-auth-utils"],
   hub: {
     db: "sqlite", // D1 (SQLite)
     kv: true, // Workers KV
@@ -38,7 +40,7 @@ export default defineNuxtConfig({
 
 ## 2. LAN からの接続設定 (0.0.0.0 リッスン)
 
-別PCやスマートフォンなどの同一LAN内の端末から `http://nuc7.local:3000` で接続できるように、`devServer` を設定しています。
+別PCやスマートフォンなどの同一LAN内の端末からアクセスできるように、`devServer` を設定しています。
 
 ```ts
 // nuxt.config.ts
@@ -61,10 +63,12 @@ Rails の `ActiveRecord` に相当する機能です。TypeScript でスキー�
 ```ts
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
-export const todos = sqliteTable("todos", {
+export const products = sqliteTable("products", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  title: text("title").notNull(),
-  completed: integer("completed", { mode: "boolean" }).notNull().default(false),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  price: integer("price").notNull(),
+  stockQuantity: integer("stock_quantity").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -72,8 +76,6 @@ export const todos = sqliteTable("todos", {
 ```
 
 ### ② ヘルパー関数の作成 (`server/utils/drizzle.ts`)
-
-NuxtHub v0.10 では `import { db, schema } from 'hub:db'` を使って Drizzle インスタンスを直接取得できます。
 
 ```ts
 import { db, schema } from "hub:db";
@@ -84,146 +86,56 @@ export const tables = schema;
 export function useDrizzle() {
   return db;
 }
-
-export type Todo = typeof schema.todos.$inferSelect;
-export type NewTodo = typeof schema.todos.$inferInsert;
 ```
 
 ### ③ マイグレーションの管理
 
-ローカル開発時は `pnpm dev` 起動時に `server/database/migrations` 内の SQL が自動適用されます。
-
 ```bash
-# マイグレーション一覧・適用状態の確認
-pnpm db:migrations
+# スキーマ変更からマイグレーション SQL を自動生成
+pnpm db:generate
 
-# 新しいマイグレーションファイルの生成
-pnpm db:create <migration_name>
-```
-
-### ④ API エンドポイントの実装
-
-`useDrizzle()` または `import { db, schema } from 'hub:db'` を使って Rails ライクにクエリを記述します。
-
-```ts
-// server/api/todos/index.post.ts
-import { todos } from "../../database/schema";
-
-export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
-  const db = useDrizzle();
-
-  // 型安全な INSERT
-  const [todo] = await db
-    .insert(todos)
-    .values({
-      title: body.title,
-    })
-    .returning();
-
-  return todo;
-});
+# 本番 Cloudflare D1 へのマイグレーション適用 (Wrangler 自動管理)
+pnpm db:migrate:prod
 ```
 
 ---
 
 ## 4. KV (Key-Value Store) を使う
 
-Rails の `Rails.cache` のように、低レイテンシでグローバルに伝播する Key-Value データを扱えます。NuxtHub v0.10 では `hub:kv` からインポートします。
+Rails の `Rails.cache` や `Solid Cache` のように、低レイテンシでグローバルに伝播する Key-Value データを扱えます。
 
 ```ts
 import { kv } from "hub:kv";
 
-// 保存 (オブジェクトもそのまま保存可能)
-await kv.set("site_settings", { maintenance: false, banner: "Welcome!" });
+// ショッピングカートの保存 (TTL: 7日間)
+await kv.set(`cart:guest_${guestId}`, cartData, { ttl: 60 * 60 * 24 * 7 });
 
 // 取得
-const settings = await kv.get("site_settings");
-
-// キー一覧取得 (※結果整合性のため伝播に最大60秒の遅延があります)
-const keys = await kv.keys();
+const cart = await kv.get(`cart:guest_${guestId}`);
 
 // 削除
-await kv.del("site_settings");
+await kv.del(`cart:guest_${guestId}`);
 ```
-
-### 💡 従来の Redis との違い：ログインセッションに KV を使わない理由
-
-従来の Web アプリケーション（Rails や Node.js）では、Redis をログインセッションの保存先として頻繁に利用していました。しかし、**Cloudflare KV は Redis とアーキテクチャが大きく異なるため、ログインセッションの保存には推奨されません。**
-
-#### ❌ Redis と Cloudflare KV の違い
-
-| 比較項目         | 従来の Redis                           | Cloudflare KV                              |
-| :--------------- | :------------------------------------- | :----------------------------------------- |
-| **整合性モデル** | **強整合性 (即時確定)**                | **結果整合性 (Eventual Consistency)**      |
-| **データ配置**   | 単一サーバー（またはクラスタ）のメモリ | 世界中すべてのエッジロケーションに分散複製 |
-| **書き込み頻度** | 毎秒数万回の高頻度書き込みが可能       | 1キーあたり秒間1回が推奨（レート制限あり） |
-| **反映遅延**     | 0 ms (即時)                            | 全エッジへの伝播に最大 60 秒の遅延         |
-
-#### ⚠️ KV でログインセッションを管理すると起きる問題
-
-1. **ログイン直後の未認証エラー**:
-   ユーザーがログイン（`POST /api/login` ➔ `kv.set('session:123')`）し、ダッシュボード画面へリダイレクトされた際、次のリクエストが未伝播のエッジにルーティングされると「セッションが見つからない（未ログイン）」と判定されてログイン画面に押し戻されるリスクがあります。
-2. **スライディングセッションの負荷**:
-   アクセスごとにセッションの有効期限や `last_active_at` を更新するような高頻度書き込みを行うと、KV の書き込み制限に引っかかります。
-
----
-
-### 🛡️ エッジ環境でのセッション管理のベストプラクティス
-
-Nuxt 4 / Cloudflare Workers 環境でユーザーセッションを管理する場合は、以下のいずれかを採用します：
-
-1. **暗号化 Cookie（ステートレス・推奨）**
-   - サーバー（KVやRedis）側にセッションを保存せず、サーバー署名・暗号化した Cookie にユーザーID等の最小限の情報を保持します。
-   - NuxtHub の [`nuxt-auth-utils`](https://github.com/Atinux/nuxt-auth-utils)（`useUserSession()`）や `h3` の `useSession` で標準的に利用可能です。エッジ環境で最も高速かつスケーラブルです。
-2. **Cloudflare D1（データベース）**
-   - セッションの失効や同時ログイン制限を厳格にサーバー管理したい場合は、**Cloudflare D1** に `sessions` テーブルを作成して管理します（強整合性のため即時反映されます）。
-
----
-
-### 🎯 KV と D1 の使い分けまとめ
-
-- **🔑 Cloudflare KV に向いているもの**:
-  - **「書き込みは少ないが、世界中どこからでも数msで即座に読みたいデータ」**
-  - フィーチャーフラグ（機能のON/OFF）、メンテナンスモードフラグ
-  - サイト設定、動的リダイレクトルール（短縮URL等）
-  - 外部APIレスポンスのキャッシュ、失効トークン（JWTブラックリスト）
-- **🗄️ Cloudflare D1 に向いているもの**:
-  - **「整合性、トランザクション、検索・ソートが必要なメインデータ」**
-  - ユーザー情報、注文・決済、Todo、ブログ記事
-  - サーバーサイドセッションテーブル
 
 ---
 
 ## 5. Blob (R2 オブジェクトストレージ) を使う
 
-Rails の `ActiveStorage` に相当する機能です。S3互換の Cloudflare R2 ストレージへファイルのアップロードや配信を行います。NuxtHub v0.10 では `hub:blob` からインポートします。
-
-### ① ファイルのアップロード (`server/api/blob/upload.post.ts`)
+Rails の `ActiveStorage` に相当する機能です。S3互換の Cloudflare R2 ストレージへファイルのアップロードや配信を行います。
 
 ```ts
 import { blob } from "hub:blob";
 
-export default defineEventHandler(async (event) => {
-  const form = await readFormData(event);
-  const file = form.get("file") as File;
-
-  const pathname = `${Date.now()}-${file.name}`;
-  const uploadedBlob = await blob.put(pathname, file);
-  return uploadedBlob;
+// アップロード
+await blob.put(`products/${productId}/image.svg`, svgContent, {
+  contentType: "image/svg+xml",
 });
-```
 
-### ② ファイルの直接配信 (`server/api/blob/[pathname].get.ts`)
-
-```ts
-import { blob } from "hub:blob";
-
+// ファイルの直接配信 (server/api/blob/[pathname].get.ts)
 export default defineEventHandler(async (event) => {
   const pathname = getRouterParam(event, "pathname");
-  if (!pathname) throw createError({ statusCode: 400, statusMessage: "Pathname is required" });
-
-  return blob.serve(event, decodeURIComponent(pathname));
+  setHeader(event, "Cache-Control", "public, max-age=31536000, immutable");
+  return blob.serve(event, decodeURIComponent(pathname!));
 });
 ```
 
@@ -231,121 +143,132 @@ export default defineEventHandler(async (event) => {
 
 ## 6. エッジキャッシュ (Cached Handler) を使う
 
-関数のレスポンスを Cloudflare エッジネットワーク上にキャッシュし、高速な応答と DB 負荷低減を実現します。
+関数のレスポンスを Cloudflare エッジネットワーク上にキャッシュし、超高速な応答と DB 負荷ゼロを実現します。
 
 ```ts
-// server/api/cached-time.ts
+// server/api/products/index.get.ts
 export default defineCachedEventHandler(
   async () => {
-    return {
-      timestamp: Date.now(),
-      generatedAt: new Date().toISOString(),
-      message: "This response is cached at the edge for 10 seconds.",
-    };
+    const db = useDrizzle();
+    return await db.select().from(tables.products);
   },
   {
-    maxAge: 10, // 10秒間キャッシュ
-    name: "cached-time",
+    maxAge: 60, // 60秒間エッジキャッシュ
+    name: "products-list",
   },
 );
 ```
 
 ---
 
-## 7. Nuxt DevTools (NuxtHub GUI) の活用
+## 7. リアルタイム Server-Sent Events (SSE) を使う
 
-NuxtHub の管理 GUI は **Nuxt DevTools** に統合されています。
+Cloudflare Workers エッジ環境に完全対応した Web Standard `TransformStream` によるリアルタイムイベント配信です。
 
-1. ブラウザで [http://nuc7.local:3000](http://nuc7.local:3000) を開きます。
-2. 画面下部に表示される小さな **Nuxt アイコン** をクリックするか、ショートカット `Shift + Alt + D` を押します。
-3. サイドメニューの **「Hub」** タブを開きます。
-   - **Database**: D1 テーブルの確認、レコード編集、任意の SQL クエリ実行
-   - **KV**: キー一覧、JSON 値のプレビュー・編集
-   - **Blob**: 保存されたファイルの一覧、プレビュー、削除
+```ts
+// server/api/realtime/inventory.get.ts
+export default defineEventHandler((event) => {
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  // 初期接続イベント
+  writer.write(encoder.encode(`data: ${JSON.stringify({ type: "connected" })}\n\n`));
+
+  const unsubscribe = subscribeInventory((data) => {
+    writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+  });
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
+});
+```
 
 ---
 
-## 8. Pulumi によるインフラ構築と本番デプロイ
+## 8. 日本語 PDF 領収書生成 (pdf-lib) を使う
 
-### ① Cloudflare API Token の作成と権限設定
+Cloudflare Workers 上で Google Noto Sans JP を完全埋め込みし、文字化けのない美しい A4 領収書 PDF をバイナリ生成して R2 に自動保管します。
 
-Cloudflare ダッシュボード（**「My Profile」→「API Tokens」→「Create Token」→「Create Custom Token」**）から、以下の権限を持つトークンを作成します：
+```ts
+// server/utils/pdf.ts
+import { PDFDocument } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 
-| カテゴリ (Scope) | リソース名 (Permission) | 権限 (Access Level) |
-| :--------------- | :---------------------- | :------------------ |
-| **Account**      | **D1**                  | **Edit**            |
-| **Account**      | **Workers KV Storage**  | **Edit**            |
-| **Account**      | **Workers R2 Storage**  | **Edit**            |
-| **Account**      | **Cloudflare Pages**    | **Edit**            |
-| **Account**      | **Account Settings**    | **Read** (推奨)     |
+export async function generateOrderReceiptPdf(orderData: OrderReceiptData): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
 
-> **Account ID の確認場所**: Cloudflare ダッシュボードのトップ画面右サイドバー、または URL 内に表示されている 32 桁の英数字です。
+  const fontBytes = await useStorage("assets:server").getItemRaw("fonts/NotoSansJP.ttf");
+  const customFont = await pdfDoc.embedFont(fontBytes);
 
-### ② 設定ファイル (`infra/.env`) の準備
-
-`infra/.env.example` をコピーして Cloudflare 認証情報を記入します：
-
-```bash
-cp infra/.env.example infra/.env
+  const page = pdfDoc.addPage([595.28, 841.89]);
+  // 日本語テキストの描画
+  return await pdfDoc.save();
+}
 ```
 
-```env
-# infra/.env
-CLOUDFLARE_ACCOUNT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-CLOUDFLARE_API_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
+---
 
-### ③ Pulumi でインフラをデプロイ
+## 9. Nuxt DevTools (NuxtHub GUI) の活用
 
-プロジェクトルートから以下のコマンドを実行します：
+NuxtHub の管理 GUI は **Nuxt DevTools** に統合されています。
+
+1. ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
+2. ショートカット `Shift + Alt + D` を押します。
+3. サイドメニューの **「Hub」** タブから、D1 データベース、KV ストア、Blob ストレージを直接閲覧・編集できます。
+
+---
+
+## 10. Pulumi によるインフラ構築と本番デプロイ
+
+### ① Pulumi で Cloudflare インフラを作成
 
 ```bash
-# 変更内容の事前確認 (dry-run)
+# 事前確認
 pnpm infra:preview
 
-# インフラの作成・適用
+# 作成・適用
 pnpm infra:apply
 ```
 
-### ③ 出力された ID を `wrangler.toml` に記入
-
-`pulumi up` 完了後、ターミナルに表示される ID（または `pulumi stack output` で確認）をプロジェクトルートの `wrangler.toml` に設定します：
+### ② `wrangler.toml` の設定
 
 ```toml
-# wrangler.toml
 name = "try-nuxthub"
 compatibility_date = "2025-03-01"
-compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "try-nuxthub-prod-d1"
-database_id = "<d1DatabaseId の値>"
+database_name = "nuxthub-cloudflare-infra-prod-d1"
+database_id = "<d1DatabaseId>"
+migrations_dir = "server/db/migrations/sqlite"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "<kvNamespaceId の値>"
+id = "<kvNamespaceId>"
 
 [[r2_buckets]]
 binding = "BLOB"
-bucket_name = "<r2BucketName の値>"
+bucket_name = "<r2BucketName>"
 ```
 
-### ④ 本番 D1 データベースへのマイグレーション適用
-
-本番環境の Cloudflare D1 にテーブル（`todos` テーブル等）を作成します（Rails の `rails db:migrate RAILS_ENV=production` に相当）：
+### ③ 本番 D1 データベースへのマイグレーション適用
 
 ```bash
 pnpm db:migrate:prod
 ```
 
-### ⑤ アプリケーションのデプロイ
-
-プロジェクトルートでビルド＆デプロイを実行します：
+### ④ アプリケーションのデプロイ
 
 ```bash
 pnpm deploy:cf
 ```
 
-デプロイ完了後、Cloudflare Pages の URL（例: `https://try-nuxthub.pages.dev`）で本番アプリが公開され、Todo の追加や KV / Blob の保存が動作するようになります！
+GitHub リポジトリにプッシュすると、`.github/workflows/deploy.yml` により自動でマイグレーション適用・ビルド・デプロイが実行されます！
