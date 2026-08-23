@@ -7,5 +7,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Pathname is required" });
   }
 
+  setHeader(event, "Cache-Control", "public, max-age=31536000, immutable");
   return blob.serve(event, decodeURIComponent(pathname));
 });

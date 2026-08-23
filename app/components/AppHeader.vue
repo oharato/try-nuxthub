@@ -38,7 +38,7 @@ onMounted(() => {
     <div class="header-top">
       <div class="header-container">
         <!-- Logo -->
-        <NuxtLink to="/" class="logo-link" aria-label="CraftCommerce ホームへ戻る">
+        <NuxtLink to="/" class="logo-link">
           <span class="logo-icon" aria-hidden="true">🏺</span>
           <div class="logo-text-group">
             <span class="logo-title">CraftCommerce</span>
@@ -62,22 +62,15 @@ onMounted(() => {
 
         <!-- Action Links & User Menu -->
         <div class="header-actions">
-          <NuxtLink to="/products" class="nav-action-link" aria-label="商品一覧ページへ">
-            📦 商品一覧
-          </NuxtLink>
+          <NuxtLink to="/products" class="nav-action-link"> 📦 商品一覧 </NuxtLink>
 
           <!-- Admin link if admin -->
-          <NuxtLink
-            v-if="isAdmin"
-            to="/admin"
-            class="nav-action-link admin-pill"
-            aria-label="管理者ダッシュボードへ"
-          >
+          <NuxtLink v-if="isAdmin" to="/admin" class="nav-action-link admin-pill">
             ⚙️ 管理画面
           </NuxtLink>
 
           <!-- Cart Button -->
-          <NuxtLink to="/cart" class="cart-btn" aria-label="ショッピングカートを見る">
+          <NuxtLink to="/cart" class="cart-btn" aria-label="ショッピングカート">
             <span class="cart-icon" aria-hidden="true">🛒</span>
             <span class="cart-label">カート</span>
             <span v-if="cart.totalCount > 0" class="cart-badge">{{ cart.totalCount }}</span>
@@ -85,20 +78,14 @@ onMounted(() => {
 
           <!-- Auth Links -->
           <div v-if="loggedIn && currentUser" class="user-menu">
-            <NuxtLink to="/mypage/orders" class="user-greeting" aria-label="マイページ・注文履歴">
+            <NuxtLink to="/mypage/orders" class="user-greeting">
               👤 <strong>{{ currentUser.name }}</strong>
             </NuxtLink>
-            <button @click="handleLogout" class="btn-logout-mini" aria-label="ログアウト">
-              ログアウト
-            </button>
+            <button @click="handleLogout" class="btn-logout-mini">ログアウト</button>
           </div>
           <div v-else class="auth-links">
-            <NuxtLink to="/login" class="btn-login-mini" aria-label="ログインページへ"
-              >ログイン</NuxtLink
-            >
-            <NuxtLink to="/signup" class="btn-signup-mini" aria-label="新規会員登録ページへ"
-              >新規登録</NuxtLink
-            >
+            <NuxtLink to="/login" class="btn-login-mini">ログイン</NuxtLink>
+            <NuxtLink to="/signup" class="btn-signup-mini">新規登録</NuxtLink>
           </div>
         </div>
       </div>

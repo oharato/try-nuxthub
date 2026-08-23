@@ -48,16 +48,10 @@ const newArrivals = computed(() => {
           Nuxt 4 + NuxtHub (Cloudflare D1 / KV / R2 / SSE) で駆動する次世代ECプラットフォーム。
         </p>
         <div class="hero-actions">
-          <NuxtLink to="/products" class="btn-hero-primary" aria-label="すべての作品を見る">
-            すべての作品を見る
-          </NuxtLink>
-          <NuxtLink
-            to="/products?category=craft-art"
-            class="btn-hero-secondary"
-            aria-label="クラフト特集を見る"
+          <NuxtLink to="/products" class="btn-hero-primary">すべての作品を見る</NuxtLink>
+          <NuxtLink to="/products?category=craft-art" class="btn-hero-secondary"
+            >クラフト特集</NuxtLink
           >
-            クラフト特集
-          </NuxtLink>
         </div>
       </div>
       <div class="hero-visual">
@@ -74,44 +68,26 @@ const newArrivals = computed(() => {
     <section class="section-container" aria-labelledby="categories-heading">
       <div class="section-head">
         <h2 id="categories-heading" class="section-title">人気のカテゴリー</h2>
-        <NuxtLink to="/products" class="link-more" aria-label="すべてのカテゴリーを見る"
-          >すべて見る →</NuxtLink
-        >
+        <NuxtLink to="/products" class="link-more">すべて見る →</NuxtLink>
       </div>
 
       <div class="category-grid">
-        <NuxtLink
-          to="/products?category=ceramics"
-          class="cat-box"
-          aria-label="陶芸・ガラス カテゴリーを見る"
-        >
+        <NuxtLink to="/products?category=ceramics" class="cat-box">
           <span class="cat-icon" aria-hidden="true">🏺</span>
           <span class="cat-title">陶芸・ガラス</span>
           <span class="cat-desc">職人の手打ち陶器と花器</span>
         </NuxtLink>
-        <NuxtLink
-          to="/products?category=woodwork"
-          class="cat-box"
-          aria-label="木工家具 カテゴリーを見る"
-        >
+        <NuxtLink to="/products?category=woodwork" class="cat-box">
           <span class="cat-icon" aria-hidden="true">🪵</span>
           <span class="cat-title">木工家具</span>
           <span class="cat-desc">国産天然木のクラフト</span>
         </NuxtLink>
-        <NuxtLink
-          to="/products?category=leather"
-          class="cat-box"
-          aria-label="レザーアイテム カテゴリーを見る"
-        >
+        <NuxtLink to="/products?category=leather" class="cat-box">
           <span class="cat-icon" aria-hidden="true">👜</span>
           <span class="cat-title">レザーアイテム</span>
           <span class="cat-desc">経年変化を楽しむ本革</span>
         </NuxtLink>
-        <NuxtLink
-          to="/products?category=digital"
-          class="cat-box"
-          aria-label="デジタル素材 カテゴリーを見る"
-        >
+        <NuxtLink to="/products?category=digital" class="cat-box">
           <span class="cat-icon" aria-hidden="true">🎨</span>
           <span class="cat-title">デジタル素材</span>
           <span class="cat-desc">商用フォント・デザイン</span>
@@ -126,7 +102,7 @@ const newArrivals = computed(() => {
           <h2 id="featured-heading" class="section-title">おすすめの作品</h2>
           <p class="section-subtitle">今週バイヤーが注目したこだわりのアイテム</p>
         </div>
-        <NuxtLink to="/products" class="link-more" aria-label="商品一覧を見る">商品一覧 →</NuxtLink>
+        <NuxtLink to="/products" class="link-more">商品一覧 →</NuxtLink>
       </div>
 
       <div v-if="pending" class="loading-state">商品を読み込み中...</div>
@@ -146,9 +122,7 @@ const newArrivals = computed(() => {
           <h2 id="new-arrivals-heading" class="section-title">新着コレクション</h2>
           <p class="section-subtitle">新しく登録されたクリエイターの作品</p>
         </div>
-        <NuxtLink to="/products" class="link-more" aria-label="すべての新着作品を見る"
-          >すべて見る →</NuxtLink
-        >
+        <NuxtLink to="/products" class="link-more">すべて見る →</NuxtLink>
       </div>
 
       <div class="products-grid">
@@ -256,7 +230,7 @@ const newArrivals = computed(() => {
 }
 
 .btn-hero-primary {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
   padding: 12px 24px;
   min-height: 48px;
@@ -270,7 +244,7 @@ const newArrivals = computed(() => {
 }
 
 .btn-hero-primary:hover {
-  background: #0369a1;
+  background: #075985;
 }
 
 .btn-hero-secondary {
