@@ -1,23 +1,45 @@
-import { createEventStream } from "h3";
 import { subscribeAdminOrders } from "../../utils/realtime";
 
-export default defineEventHandler(async (event) => {
-  const eventStream = createEventStream(event);
+export default defineEventHandler((event) => {
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  // Send initial connected event
+  writer
+    .write(
+      encoder.encode(`data: ${JSON.stringify({ type: "connected", timestamp: Date.now() })}\n\n`),
+    )
+    .catch(() => {});
 
   const unsubscribe = subscribeAdminOrders(async (data) => {
     try {
-      await eventStream.push(JSON.stringify(data));
+      await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
     } catch {
-      // client disconnected
+      unsubscribe();
     }
   });
 
-  eventStream.onClosed(async () => {
-    unsubscribe();
+  const heartbeatInterval = setInterval(() => {
+    writer.write(encoder.encode(`: ping\n\n`)).catch(() => {
+      clearInterval(heartbeatInterval);
+      unsubscribe();
+    });
+  }, 25000);
+
+  if (event.node?.req) {
+    event.node.req.on?.("close", () => {
+      clearInterval(heartbeatInterval);
+      unsubscribe();
+    });
+  }
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
   });
-
-  // Send initial ping/connection event
-  await eventStream.push(JSON.stringify({ type: "connected", timestamp: Date.now() }));
-
-  return eventStream.send();
 });

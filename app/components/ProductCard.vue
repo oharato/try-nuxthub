@@ -26,15 +26,19 @@ async function handleAddToCart() {
 
 <template>
   <div class="product-card">
-    <NuxtLink :to="`/products/${product.slug}`" class="image-wrap">
+    <NuxtLink
+      :to="`/products/${product.slug}`"
+      class="image-wrap"
+      :aria-label="`${product.name} の商品詳細を見る`"
+    >
       <img
         v-if="product.mainImage"
         :src="`/api/blob/${encodeURIComponent(product.mainImage)}`"
-        :alt="product.name"
+        :alt="`${product.name} の商品画像`"
         class="product-img"
         loading="lazy"
       />
-      <div v-else class="placeholder-img">🏺</div>
+      <div v-else class="placeholder-img" aria-hidden="true">🏺</div>
 
       <div class="badge-overlay">
         <span v-if="product.stockQuantity <= 0" class="stock-badge out-of-stock">売り切れ</span>
@@ -74,7 +78,7 @@ async function handleAddToCart() {
           :disabled="product.stockQuantity <= 0 || isAdding"
           class="btn-card-cart"
           :class="{ 'btn-disabled': product.stockQuantity <= 0 }"
-          title="カートに追加"
+          :aria-label="`${product.name} をカートに追加`"
         >
           {{ isAdding ? "追加中" : product.stockQuantity <= 0 ? "完売" : "カートへ" }}
         </button>
@@ -139,26 +143,26 @@ async function handleAddToCart() {
 }
 
 .stock-badge {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 6px;
   display: inline-block;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .in-stock {
-  background: #22c55e;
+  background: #15803d;
   color: #ffffff;
 }
 
 .low-stock {
-  background: #f59e0b;
+  background: #b45309;
   color: #ffffff;
 }
 
 .out-of-stock {
-  background: #ef4444;
+  background: #b91c1c;
   color: #ffffff;
 }
 
@@ -170,9 +174,9 @@ async function handleAddToCart() {
 }
 
 .category-tag {
-  font-size: 0.75rem;
-  color: #0284c7;
-  font-weight: 600;
+  font-size: 0.78rem;
+  color: #0369a1;
+  font-weight: 700;
   margin-bottom: 6px;
 }
 
@@ -190,29 +194,31 @@ async function handleAddToCart() {
 }
 
 .product-name a:hover {
-  color: #0284c7;
+  color: #0369a1;
 }
 
 .rating-row {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   margin-bottom: 12px;
 }
 
 .stars {
-  color: #eab308;
+  color: #b45309;
   font-weight: 700;
 }
 
 .review-count {
-  color: #64748b;
+  color: #475569;
+  font-weight: 500;
 }
 
 .new-tag {
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 0.78rem;
+  color: #475569;
+  font-weight: 600;
 }
 
 .card-footer {
@@ -236,35 +242,37 @@ async function handleAddToCart() {
 }
 
 .price-val {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: #0f172a;
 }
 
 .tax-tag {
-  font-size: 0.65rem;
-  color: #64748b;
-  margin-left: 2px;
+  font-size: 0.7rem;
+  color: #475569;
+  font-weight: 600;
+  margin-left: 3px;
 }
 
 .btn-card-cart {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
   border: none;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  min-height: 40px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .btn-card-cart:hover {
-  background: #0369a1;
+  background: #075985;
 }
 
 .btn-disabled {
-  background: #cbd5e1 !important;
+  background: #e2e8f0 !important;
   color: #64748b !important;
   cursor: not-allowed !important;
 }

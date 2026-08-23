@@ -1,10 +1,10 @@
 <template>
-  <footer class="app-footer">
+  <footer class="app-footer" aria-label="フッターナビゲーション">
     <div class="footer-container">
       <div class="footer-grid">
         <div class="footer-col">
           <div class="footer-brand">
-            <span class="brand-icon">🏺</span>
+            <span class="brand-icon" aria-hidden="true">🏺</span>
             <span class="brand-name">CraftCommerce</span>
           </div>
           <p class="brand-desc">
@@ -53,7 +53,7 @@
 <style scoped>
 .app-footer {
   background: #0f172a;
-  color: #94a3b8;
+  color: #cbd5e1;
   padding: 48px 0 24px 0;
   margin-top: 60px;
 }
@@ -90,10 +90,10 @@
 }
 
 .brand-desc {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   line-height: 1.6;
   margin-bottom: 16px;
-  color: #94a3b8;
+  color: #cbd5e1;
 }
 
 .tech-tags {
@@ -103,15 +103,16 @@
 }
 
 .tech-tag {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   background: #1e293b;
   color: #38bdf8;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 4px;
 }
 
 .footer-col h4 {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0 0 16px 0;
@@ -127,21 +128,25 @@
 }
 
 .footer-col a {
-  color: #94a3b8;
+  color: #cbd5e1;
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
   transition: color 0.2s;
 }
 
 .footer-col a:hover {
   color: #ffffff;
+  text-decoration: underline;
 }
 
 .footer-bottom {
   padding-top: 24px;
   text-align: center;
-  font-size: 0.8rem;
-  color: #64748b;
+  font-size: 0.82rem;
+  color: #94a3b8;
 }
 
 @media (max-width: 768px) {

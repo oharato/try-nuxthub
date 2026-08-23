@@ -20,9 +20,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="recentlyViewed.length > 0" class="recently-viewed-section">
+  <div
+    v-if="recentlyViewed.length > 0"
+    class="recently-viewed-section"
+    aria-labelledby="recently-heading"
+  >
     <div class="section-title-wrap">
-      <h3 class="section-title">🕒 最近チェックした商品</h3>
+      <h3 id="recently-heading" class="section-title">🕒 最近チェックした商品</h3>
       <span class="section-sub">Cloudflare KV で高速保持</span>
     </div>
 
@@ -32,16 +36,17 @@ onMounted(() => {
         :key="item.id"
         :to="`/products/${item.slug}`"
         class="recent-card"
+        :aria-label="`${item.name} の商品詳細を見る`"
       >
         <div class="recent-img-wrap">
           <img
             v-if="item.mainImage"
             :src="`/api/blob/${encodeURIComponent(item.mainImage)}`"
-            :alt="item.name"
+            :alt="`${item.name} の商品サムネイル`"
             class="recent-img"
             loading="lazy"
           />
-          <div v-else class="recent-placeholder">🏺</div>
+          <div v-else class="recent-placeholder" aria-hidden="true">🏺</div>
         </div>
         <div class="recent-info">
           <span class="recent-name">{{ item.name }}</span>
@@ -74,8 +79,9 @@ onMounted(() => {
 }
 
 .section-sub {
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 0.78rem;
+  color: #475569;
+  font-weight: 600;
 }
 
 .recently-grid {
@@ -138,7 +144,7 @@ onMounted(() => {
 }
 
 .recent-name {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: #1e293b;
   white-space: nowrap;
@@ -147,8 +153,8 @@ onMounted(() => {
 }
 
 .recent-price {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  color: #0284c7;
+  color: #0369a1;
 }
 </style>

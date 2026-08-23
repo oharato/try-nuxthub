@@ -1,5 +1,16 @@
 <script setup lang="ts">
-const { data: products, pending, refresh } = await useFetch<any[]>("/api/products");
+useHead({
+  title: "ホーム - 職人の手仕事とモダンクラフトストア",
+  meta: [
+    {
+      name: "description",
+      content:
+        "信楽焼の器、山桜のカッティングボード、イタリアンレザー財布からデジタルフォントまで。全国の職人が生み出すこだわりの作品をお届けします。",
+    },
+  ],
+});
+
+const { data: products, pending } = await useFetch<any[]>("/api/products");
 const { data: categories } = await useFetch<any[]>("/api/categories");
 
 // Realtime inventory SSE listener
@@ -26,19 +37,27 @@ const newArrivals = computed(() => {
 <template>
   <div class="top-page">
     <!-- Hero Banner -->
-    <section class="hero-banner">
+    <section class="hero-banner" aria-labelledby="hero-heading">
       <div class="hero-content">
         <div class="hero-badge">✨ Handcrafted & Digital Creations</div>
-        <h1 class="hero-title">職人の手仕事と、<br />現代のクリエイティビティが出会う場所。</h1>
+        <h1 id="hero-heading" class="hero-title">
+          職人の手仕事と、<br />現代のクリエイティビティが出会う場所。
+        </h1>
         <p class="hero-desc">
           信楽焼の器、山桜の一枚板カッティングボード、イタリアンレザー財布から商用フォントまで。<br />
           Nuxt 4 + NuxtHub (Cloudflare D1 / KV / R2 / SSE) で駆動する次世代ECプラットフォーム。
         </p>
         <div class="hero-actions">
-          <NuxtLink to="/products" class="btn-hero-primary">すべての作品を見る</NuxtLink>
-          <NuxtLink to="/products?category=craft-art" class="btn-hero-secondary"
-            >クラフト特集</NuxtLink
+          <NuxtLink to="/products" class="btn-hero-primary" aria-label="すべての作品を見る">
+            すべての作品を見る
+          </NuxtLink>
+          <NuxtLink
+            to="/products?category=craft-art"
+            class="btn-hero-secondary"
+            aria-label="クラフト特集を見る"
           >
+            クラフト特集
+          </NuxtLink>
         </div>
       </div>
       <div class="hero-visual">
@@ -52,30 +71,48 @@ const newArrivals = computed(() => {
     </section>
 
     <!-- Categories Strip -->
-    <section class="section-container">
+    <section class="section-container" aria-labelledby="categories-heading">
       <div class="section-head">
-        <h2 class="section-title">人気のカテゴリー</h2>
-        <NuxtLink to="/products" class="link-more">すべて見る →</NuxtLink>
+        <h2 id="categories-heading" class="section-title">人気のカテゴリー</h2>
+        <NuxtLink to="/products" class="link-more" aria-label="すべてのカテゴリーを見る"
+          >すべて見る →</NuxtLink
+        >
       </div>
 
       <div class="category-grid">
-        <NuxtLink to="/products?category=ceramics" class="cat-box">
-          <span class="cat-icon">🏺</span>
+        <NuxtLink
+          to="/products?category=ceramics"
+          class="cat-box"
+          aria-label="陶芸・ガラス カテゴリーを見る"
+        >
+          <span class="cat-icon" aria-hidden="true">🏺</span>
           <span class="cat-title">陶芸・ガラス</span>
           <span class="cat-desc">職人の手打ち陶器と花器</span>
         </NuxtLink>
-        <NuxtLink to="/products?category=woodwork" class="cat-box">
-          <span class="cat-icon">🪵</span>
+        <NuxtLink
+          to="/products?category=woodwork"
+          class="cat-box"
+          aria-label="木工家具 カテゴリーを見る"
+        >
+          <span class="cat-icon" aria-hidden="true">🪵</span>
           <span class="cat-title">木工家具</span>
           <span class="cat-desc">国産天然木のクラフト</span>
         </NuxtLink>
-        <NuxtLink to="/products?category=leather" class="cat-box">
-          <span class="cat-icon">👜</span>
+        <NuxtLink
+          to="/products?category=leather"
+          class="cat-box"
+          aria-label="レザーアイテム カテゴリーを見る"
+        >
+          <span class="cat-icon" aria-hidden="true">👜</span>
           <span class="cat-title">レザーアイテム</span>
           <span class="cat-desc">経年変化を楽しむ本革</span>
         </NuxtLink>
-        <NuxtLink to="/products?category=digital" class="cat-box">
-          <span class="cat-icon">🎨</span>
+        <NuxtLink
+          to="/products?category=digital"
+          class="cat-box"
+          aria-label="デジタル素材 カテゴリーを見る"
+        >
+          <span class="cat-icon" aria-hidden="true">🎨</span>
           <span class="cat-title">デジタル素材</span>
           <span class="cat-desc">商用フォント・デザイン</span>
         </NuxtLink>
@@ -83,13 +120,13 @@ const newArrivals = computed(() => {
     </section>
 
     <!-- Featured Products -->
-    <section class="section-container">
+    <section class="section-container" aria-labelledby="featured-heading">
       <div class="section-head">
         <div>
-          <h2 class="section-title">おすすめの作品</h2>
+          <h2 id="featured-heading" class="section-title">おすすめの作品</h2>
           <p class="section-subtitle">今週バイヤーが注目したこだわりのアイテム</p>
         </div>
-        <NuxtLink to="/products" class="link-more">商品一覧 →</NuxtLink>
+        <NuxtLink to="/products" class="link-more" aria-label="商品一覧を見る">商品一覧 →</NuxtLink>
       </div>
 
       <div v-if="pending" class="loading-state">商品を読み込み中...</div>
@@ -99,13 +136,19 @@ const newArrivals = computed(() => {
     </section>
 
     <!-- New Arrivals -->
-    <section class="section-container" v-if="newArrivals.length > 0">
+    <section
+      class="section-container"
+      v-if="newArrivals.length > 0"
+      aria-labelledby="new-arrivals-heading"
+    >
       <div class="section-head">
         <div>
-          <h2 class="section-title">新着コレクション</h2>
+          <h2 id="new-arrivals-heading" class="section-title">新着コレクション</h2>
           <p class="section-subtitle">新しく登録されたクリエイターの作品</p>
         </div>
-        <NuxtLink to="/products" class="link-more">すべて見る →</NuxtLink>
+        <NuxtLink to="/products" class="link-more" aria-label="すべての新着作品を見る"
+          >すべて見る →</NuxtLink
+        >
       </div>
 
       <div class="products-grid">
@@ -114,10 +157,10 @@ const newArrivals = computed(() => {
     </section>
 
     <!-- Tech Architecture Features Highlight -->
-    <section class="tech-highlight-section">
+    <section class="tech-highlight-section" aria-labelledby="tech-heading">
       <div class="tech-head">
         <span class="tech-badge">ARCHITECTURAL SHOWCASE</span>
-        <h2>NuxtHub (Nuxt 4 + Cloudflare) によるフルスタックEC</h2>
+        <h2 id="tech-heading">NuxtHub (Nuxt 4 + Cloudflare) によるフルスタックEC</h2>
         <p>
           Rails 8 の「Solid Trio」と同等以上の開発体験・パフォーマンスをサーバーレスエッジで実現
         </p>
@@ -125,7 +168,7 @@ const newArrivals = computed(() => {
 
       <div class="tech-cards-grid">
         <div class="tech-box">
-          <div class="tech-icon">⚡</div>
+          <div class="tech-icon" aria-hidden="true">⚡</div>
           <h3>Edge SSR & Cache</h3>
           <p>
             <code>defineCachedEventHandler</code>
@@ -133,7 +176,7 @@ const newArrivals = computed(() => {
           </p>
         </div>
         <div class="tech-box">
-          <div class="tech-icon">🔑</div>
+          <div class="tech-icon" aria-hidden="true">🔑</div>
           <h3>KV Store カート</h3>
           <p>
             Cloudflare KV (<code>hubKV()</code>)
@@ -141,7 +184,7 @@ const newArrivals = computed(() => {
           </p>
         </div>
         <div class="tech-box">
-          <div class="tech-icon">📄</div>
+          <div class="tech-icon" aria-hidden="true">📄</div>
           <h3>PDF 領収書 & R2</h3>
           <p>
             <code>pdf-lib</code> で Workers 上でバイナリ生成し、Cloudflare R2
@@ -149,7 +192,7 @@ const newArrivals = computed(() => {
           </p>
         </div>
         <div class="tech-box">
-          <div class="tech-icon">📡</div>
+          <div class="tech-icon" aria-hidden="true">📡</div>
           <h3>Server-Sent Events</h3>
           <p>購入時のリアルタイム在庫引き当てと、管理者向け注文速報トースト通知を SSE で同期。</p>
         </div>
@@ -182,9 +225,9 @@ const newArrivals = computed(() => {
 
 .hero-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(8px);
-  color: #38bdf8;
+  color: #e0f2fe;
   font-size: 0.8rem;
   font-weight: 700;
   padding: 4px 12px;
@@ -203,7 +246,7 @@ const newArrivals = computed(() => {
 .hero-desc {
   font-size: 0.95rem;
   line-height: 1.7;
-  color: #cbd5e1;
+  color: #f1f5f9;
   margin: 0 0 28px 0;
 }
 
@@ -216,6 +259,9 @@ const newArrivals = computed(() => {
   background: #0284c7;
   color: #ffffff;
   padding: 12px 24px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 700;
@@ -228,19 +274,22 @@ const newArrivals = computed(() => {
 }
 
 .btn-hero-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 12px 24px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
   border-radius: 8px;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.95rem;
   transition: background 0.2s;
 }
 
 .btn-hero-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .hero-visual {
@@ -249,9 +298,9 @@ const newArrivals = computed(() => {
 }
 
 .visual-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 12px;
   padding: 24px;
   width: 100%;
@@ -259,9 +308,9 @@ const newArrivals = computed(() => {
 }
 
 .visual-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #f59e0b;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fef08a;
   margin-bottom: 8px;
 }
 
@@ -274,18 +323,18 @@ const newArrivals = computed(() => {
 .visual-price {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #38bdf8;
+  color: #bae6fd;
   margin-bottom: 12px;
 }
 
 .visual-price .tax {
   font-size: 0.75rem;
-  color: #cbd5e1;
+  color: #f1f5f9;
 }
 
 .visual-note {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #cbd5e1;
   margin: 0;
 }
 
@@ -310,15 +359,18 @@ const newArrivals = computed(() => {
 
 .section-subtitle {
   font-size: 0.85rem;
-  color: #64748b;
+  color: #475569;
   margin: 4px 0 0 0;
 }
 
 .link-more {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: #0284c7;
+  font-weight: 700;
+  color: #0369a1;
   text-decoration: none;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .link-more:hover {
@@ -340,6 +392,7 @@ const newArrivals = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-height: 120px;
   transition:
     transform 0.2s,
     box-shadow 0.2s;
@@ -348,7 +401,7 @@ const newArrivals = computed(() => {
 .cat-box:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: #0284c7;
+  border-color: #0369a1;
 }
 
 .cat-icon {
@@ -363,8 +416,8 @@ const newArrivals = computed(() => {
 }
 
 .cat-desc {
-  font-size: 0.8rem;
-  color: #64748b;
+  font-size: 0.82rem;
+  color: #475569;
 }
 
 .products-grid {
@@ -376,7 +429,7 @@ const newArrivals = computed(() => {
 .loading-state {
   padding: 40px;
   text-align: center;
-  color: #64748b;
+  color: #475569;
 }
 
 .tech-highlight-section {
@@ -395,7 +448,7 @@ const newArrivals = computed(() => {
 .tech-badge {
   font-size: 0.75rem;
   font-weight: 800;
-  color: #0284c7;
+  color: #0369a1;
   background: #e0f2fe;
   padding: 4px 12px;
   border-radius: 9999px;
@@ -412,7 +465,7 @@ const newArrivals = computed(() => {
 
 .tech-head p {
   font-size: 0.9rem;
-  color: #64748b;
+  color: #475569;
   margin: 0;
 }
 
@@ -442,17 +495,19 @@ const newArrivals = computed(() => {
 }
 
 .tech-box p {
-  font-size: 0.8rem;
-  color: #475569;
+  font-size: 0.82rem;
+  color: #334155;
   line-height: 1.6;
   margin: 0;
 }
 
 .tech-box code {
   background: #e2e8f0;
+  color: #0f172a;
   padding: 2px 4px;
   border-radius: 4px;
   font-size: 0.75rem;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {

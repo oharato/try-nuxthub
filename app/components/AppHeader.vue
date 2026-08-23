@@ -38,8 +38,8 @@ onMounted(() => {
     <div class="header-top">
       <div class="header-container">
         <!-- Logo -->
-        <NuxtLink to="/" class="logo-link">
-          <span class="logo-icon">🏺</span>
+        <NuxtLink to="/" class="logo-link" aria-label="CraftCommerce ホームへ戻る">
+          <span class="logo-icon" aria-hidden="true">🏺</span>
           <div class="logo-text-group">
             <span class="logo-title">CraftCommerce</span>
             <span class="logo-subtitle">モダン・クラフトストア</span>
@@ -48,50 +48,64 @@ onMounted(() => {
 
         <!-- Search Bar -->
         <div class="search-form-wrap">
-          <form @submit.prevent="handleSearch" class="search-form">
+          <form @submit.prevent="handleSearch" class="search-form" role="search">
             <input
               v-model="searchQuery"
               type="text"
               placeholder="こだわりの作品・家具・フォントを検索..."
               class="search-input"
+              aria-label="商品を検索"
             />
-            <button type="submit" class="search-btn" title="検索">🔍</button>
+            <button type="submit" class="search-btn" aria-label="検索を実行">🔍</button>
           </form>
         </div>
 
         <!-- Action Links & User Menu -->
         <div class="header-actions">
-          <NuxtLink to="/products" class="nav-action-link"> 📦 商品一覧 </NuxtLink>
+          <NuxtLink to="/products" class="nav-action-link" aria-label="商品一覧ページへ">
+            📦 商品一覧
+          </NuxtLink>
 
           <!-- Admin link if admin -->
-          <NuxtLink v-if="isAdmin" to="/admin" class="nav-action-link admin-pill">
+          <NuxtLink
+            v-if="isAdmin"
+            to="/admin"
+            class="nav-action-link admin-pill"
+            aria-label="管理者ダッシュボードへ"
+          >
             ⚙️ 管理画面
           </NuxtLink>
 
           <!-- Cart Button -->
-          <NuxtLink to="/cart" class="cart-btn" title="ショッピングカート">
-            <span class="cart-icon">🛒</span>
+          <NuxtLink to="/cart" class="cart-btn" aria-label="ショッピングカートを見る">
+            <span class="cart-icon" aria-hidden="true">🛒</span>
             <span class="cart-label">カート</span>
             <span v-if="cart.totalCount > 0" class="cart-badge">{{ cart.totalCount }}</span>
           </NuxtLink>
 
           <!-- Auth Links -->
           <div v-if="loggedIn && currentUser" class="user-menu">
-            <NuxtLink to="/mypage/orders" class="user-greeting" title="マイページ・注文履歴">
+            <NuxtLink to="/mypage/orders" class="user-greeting" aria-label="マイページ・注文履歴">
               👤 <strong>{{ currentUser.name }}</strong>
             </NuxtLink>
-            <button @click="handleLogout" class="btn-logout-mini">ログアウト</button>
+            <button @click="handleLogout" class="btn-logout-mini" aria-label="ログアウト">
+              ログアウト
+            </button>
           </div>
           <div v-else class="auth-links">
-            <NuxtLink to="/login" class="btn-login-mini">ログイン</NuxtLink>
-            <NuxtLink to="/signup" class="btn-signup-mini">新規登録</NuxtLink>
+            <NuxtLink to="/login" class="btn-login-mini" aria-label="ログインページへ"
+              >ログイン</NuxtLink
+            >
+            <NuxtLink to="/signup" class="btn-signup-mini" aria-label="新規会員登録ページへ"
+              >新規登録</NuxtLink
+            >
           </div>
         </div>
       </div>
     </div>
 
     <!-- Category Nav Bar -->
-    <nav class="category-nav">
+    <nav class="category-nav" aria-label="商品カテゴリー">
       <div class="header-container nav-scroll">
         <NuxtLink
           to="/products"
@@ -160,7 +174,7 @@ onMounted(() => {
 }
 
 .header-top {
-  padding: 14px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -170,6 +184,7 @@ onMounted(() => {
   gap: 10px;
   text-decoration: none;
   color: #0f172a;
+  min-height: 44px;
 }
 
 .logo-icon {
@@ -185,13 +200,13 @@ onMounted(() => {
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #0284c7;
+  color: #0369a1;
 }
 
 .logo-subtitle {
-  font-size: 0.7rem;
-  color: #64748b;
-  font-weight: 500;
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 600;
 }
 
 .search-form-wrap {
@@ -208,12 +223,13 @@ onMounted(() => {
   border-radius: 9999px;
   padding: 4px 6px 4px 14px;
   transition: all 0.2s;
+  min-height: 42px;
 }
 
 .search-form:focus-within {
-  border-color: #0284c7;
+  border-color: #0369a1;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.15);
 }
 
 .search-input {
@@ -229,8 +245,13 @@ onMounted(() => {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px 10px;
-  font-size: 0.95rem;
+  padding: 8px 12px;
+  font-size: 1rem;
+  min-width: 40px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-actions {
@@ -243,52 +264,58 @@ onMounted(() => {
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #334155;
+  color: #1e293b;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 8px;
   transition: color 0.2s;
 }
 
 .nav-action-link:hover {
-  color: #0284c7;
+  color: #0369a1;
 }
 
 .admin-pill {
   background: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-  padding: 4px 10px;
+  color: #15803d;
+  border: 1px solid #86efac;
+  padding: 6px 12px;
   border-radius: 9999px;
   font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .admin-pill:hover {
   background: #dcfce7;
-  color: #15803d;
+  color: #166534;
 }
 
 .cart-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
-  padding: 8px 14px;
+  padding: 8px 16px;
+  min-height: 44px;
   border-radius: 9999px;
   text-decoration: none;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 700;
   position: relative;
   transition: background 0.2s;
 }
 
 .cart-btn:hover {
-  background: #0369a1;
+  background: #075985;
 }
 
 .cart-badge {
-  background: #ef4444;
+  background: #dc2626;
   color: #ffffff;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   padding: 2px 7px;
   border-radius: 9999px;
   line-height: 1;
@@ -302,20 +329,25 @@ onMounted(() => {
 
 .user-greeting {
   font-size: 0.85rem;
-  color: #334155;
+  color: #1e293b;
   text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .user-greeting:hover {
-  color: #0284c7;
+  color: #0369a1;
 }
 
 .btn-logout-mini {
   background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 0.75rem;
-  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  min-height: 38px;
   border-radius: 6px;
   cursor: pointer;
 }
@@ -333,52 +365,71 @@ onMounted(() => {
 
 .btn-login-mini {
   text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #0284c7;
-  padding: 6px 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0369a1;
+  padding: 8px 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-login-mini:hover {
+  color: #075985;
+  text-decoration: underline;
 }
 
 .btn-signup-mini {
   text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   color: #ffffff;
   background: #0f172a;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.btn-signup-mini:hover {
+  background: #1e293b;
 }
 
 .category-nav {
-  background: #fafaf9;
-  padding: 8px 0;
+  background: #f8fafc;
+  padding: 6px 0;
   overflow-x: auto;
 }
 
 .nav-scroll {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   white-space: nowrap;
 }
 
 .cat-link {
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  color: #64748b;
-  padding: 4px 10px;
+  color: #334155;
+  padding: 8px 12px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
   border-radius: 6px;
   transition: all 0.15s;
 }
 
 .cat-link:hover {
   color: #0f172a;
-  background: #f1f5f9;
+  background: #e2e8f0;
 }
 
 .cat-link-active {
-  color: #0284c7 !important;
+  color: #0369a1 !important;
   background: #e0f2fe !important;
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {

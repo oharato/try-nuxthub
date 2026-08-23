@@ -13,6 +13,32 @@ export default defineNuxtConfig({
     client: false,
   },
 
+  // App & SEO Configuration
+  app: {
+    head: {
+      htmlAttrs: {
+        lang: "ja",
+      },
+      title: "CraftCommerce - モダン・クラフトストア",
+      meta: [
+        { charset: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        {
+          name: "description",
+          content:
+            "全国の職人・クリエイターによるこだわりの手作り工芸品、木工家具、陶芸、レザーアイテム、商用フォントをお届けするモダンEコマースプラットフォーム。",
+        },
+      ],
+      link: [
+        {
+          rel: "icon",
+          type: "image/svg+xml",
+          href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏺</text></svg>",
+        },
+      ],
+    },
+  },
+
   // Dev server configuration for LAN access
   devServer: {
     host: "0.0.0.0",
@@ -38,7 +64,6 @@ export default defineNuxtConfig({
       },
     },
     public: {
-      // Can be overridden by NUXT_PUBLIC_HELLO_TEXT environment variable
       helloText: "Hello from the Edge 👋",
     },
   },
