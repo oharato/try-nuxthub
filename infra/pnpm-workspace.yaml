@@ -2,6 +2,3 @@ allowBuilds:
   protobufjs: true
 
 minimumReleaseAge: 0
-
-onlyBuiltDependencies:
-  - protobufjs
